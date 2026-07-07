@@ -1,0 +1,37 @@
+[
+  {
+    "name": "BitZed",
+    "lightningAddress": "bitzed@blink.sv",
+    "tagline": "Bitcoin payments"
+  },
+  {
+    "name": "HJ Simwinga",
+    "lightningAddress": "hjsimwinga@blink.sv",
+    "tagline": "Blink wallet"
+  },
+  {
+    "name": "HJ Simwinga",
+    "lightningAddress": "hjsimwinga@walletofsatoshi.com",
+    "tagline": "Wallet of Satoshi"
+  },
+  {
+    "name": "My Dad",
+    "lightningAddress": "mydad@blink.sv",
+    "tagline": "Blink wallet"
+  },
+  {
+    "name": "HJ Simwinga 1",
+    "lightningAddress": "hjsimwinga1@blink.sv",
+    "tagline": "Blink wallet"
+  },
+  {
+    "name": "John",
+    "lightningAddress": "john@blink.sv",
+    "tagline": "Blink wallet"
+  },
+  {
+    "name": "Rin",
+    "lightningAddress": "rin@blink.sv",
+    "tagline": "Blink wallet"
+  }
+]

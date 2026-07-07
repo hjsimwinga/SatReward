@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Payment {
+  id                  String   @id @default(cuid())
+  rewardAddress       String
+  merchantAddress     String
+  merchantName        String
+  amountSats          Int
+  amountZmw           Float?
+  paymentHash         String?
+  preimage            String?
+  bolt11              String?
+  status              String   @default("pending")
+  verifyUrl           String?
+  verifyUrlsJson      String?
+  callbackUrl         String?
+  successActionJson   String?
+  settlementHintsJson String?
+  rewardSent          Boolean  @default(false)
+  rewardSats          Int?
+  rewardSkippedReason String?
+  createdAt           DateTime @default(now())
+
+  @@index([rewardAddress, createdAt])
+  @@index([paymentHash])
+  @@index([merchantAddress, createdAt])
+  @@map("payments")
+}
+
+model DailyReward {
+  id            String   @id @default(cuid())
+  rewardAddress String
+  rewardDate    String
+  paymentId     String
+  rewardSats    Int
+  createdAt     DateTime @default(now())
+
+  @@unique([rewardAddress, rewardDate])
+  @@map("daily_rewards")
+}
