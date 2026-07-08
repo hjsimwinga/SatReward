@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const amountMsats = BigInt(amountSats) * 1000n;
+    const amountMsats = BigInt(amountSats) * BigInt(1000);
     const resolved = await resolveLnurlPay(merchantAddress);
     validateAmountMsats(amountMsats, resolved.minSendable, resolved.maxSendable);
 

@@ -19,11 +19,15 @@ Fill in:
 ## Deploy on VPS
 
 ```bash
+cd /root/SatReward
 git pull
+cp .env.example .env
+nano .env          # add BLINK_API_KEY + wallet ID first
 npm install
 npm run build
 npx prisma db push
-pm2 start npm --name satreward -- start
+pm2 delete satreward 2>/dev/null || true
+pm2 start npm --name satreward --cwd /root/SatReward -- start
 pm2 save
 ```
 

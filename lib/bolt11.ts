@@ -35,7 +35,7 @@ export function decodeBolt11(bolt11: string): DecodedInvoice {
           : typeof sat === "number"
             ? sat
             : Number(sat);
-      if (!Number.isNaN(n) && n >= 0) amountMsats = BigInt(n) * 1000n;
+      if (!Number.isNaN(n) && n >= 0) amountMsats = BigInt(n) * BigInt(1000);
     }
     if (amountMsats == null && d.millisatoshis != null) {
       amountMsats = BigInt(d.millisatoshis);
