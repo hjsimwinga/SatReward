@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { NumberPad } from "@/components/NumberPad";
+import { apiPath } from "@/lib/apiPath";
 
 type Props = {
   value: string;
@@ -20,7 +21,7 @@ export function AmountInput({ value, onChange, disabled }: Props) {
 
   useEffect(() => {
     axios
-      .get("/api/rate/zmw")
+      .get(apiPath("/api/rate/zmw"))
       .then((res) => {
         if (res.data?.ok) setZmwPerSat(res.data.zmwPerSat ?? null);
       })

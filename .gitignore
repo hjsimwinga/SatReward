@@ -1,7 +1,9 @@
 node_modules
 .next
 .env
+.env.*
+!.env.example
 .env.local
-prisma/dev.db
-prisma/dev.db-journal
+prisma/*.db
+prisma/*.db-journal
 *.log

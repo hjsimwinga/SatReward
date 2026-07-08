@@ -16,6 +16,7 @@ import {
   getRecentRewardAddresses,
   saveRecentRewardAddress,
 } from "@/lib/recentRewardAddresses";
+import { apiPath } from "@/lib/apiPath";
 
 type Step = "address" | "merchant" | "pay" | "done";
 
@@ -73,7 +74,7 @@ export default function HomePage() {
 
   useEffect(() => {
     axios
-      .get("/api/merchants")
+      .get(apiPath("/api/merchants"))
       .then((res) => {
         setMerchants((res.data?.merchants ?? []) as MerchantOption[]);
         setRecentAddresses((res.data?.recentAddresses ?? []) as string[]);
@@ -157,7 +158,7 @@ export default function HomePage() {
     setLoading(true);
     setErr(null);
     try {
-      const res = await axios.post("/api/pay/invoice", {
+      const res = await axios.post(apiPath("/api/pay/invoice"), {
         rewardAddress: rewardAddress.trim(),
         merchantAddress,
         amountZmw: zmw,
@@ -187,7 +188,7 @@ export default function HomePage() {
 
     const poll = async () => {
       try {
-        const res = await axios.post("/api/pay/poll", { paymentId });
+        const res = await axios.post(apiPath("/api/pay/poll"), { paymentId });
         const d = res.data;
         if (d?.status === "paid" && !paidRef.current) {
           paidRef.current = true;
@@ -215,7 +216,7 @@ export default function HomePage() {
 
     const pollReward = async () => {
       try {
-        const res = await axios.post("/api/pay/poll", { paymentId });
+        const res = await axios.post(apiPath("/api/pay/poll"), { paymentId });
         const d = res.data;
         if (d?.status === "paid") applyRewardPoll(d);
       } catch {

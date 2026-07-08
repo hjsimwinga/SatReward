@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { QRDisplay } from "@/components/QRDisplay";
+import { apiPath } from "@/lib/apiPath";
 
 const POOL_POLL_MS = 60_000;
 const DONATE_POLL_MS = 3000;
@@ -44,7 +45,7 @@ export function PoolBalanceCard() {
 
   const loadBalance = useCallback(async () => {
     try {
-      const res = await axios.get("/api/pool/balance");
+      const res = await axios.get(apiPath("/api/pool/balance"));
       if (res.data?.ok) {
         const nextSats = res.data.sats ?? null;
         const nextZmw = res.data.zmw ?? null;
@@ -107,7 +108,7 @@ export function PoolBalanceCard() {
     setDonated(false);
 
     axios
-      .post("/api/pool/donate-invoice")
+      .post(apiPath("/api/pool/donate-invoice"))
       .then((res) => {
         if (cancelled) return;
         if (res.data?.ok) {
