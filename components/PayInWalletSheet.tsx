@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
+import { apiPath } from "@/lib/apiPath";
 import {
   genericLightningUri,
   openInWallet,
@@ -33,8 +33,9 @@ function ChevronRight() {
 function WalletLogo({ wallet }: { wallet: LightningWalletOption }) {
   return (
     <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-stone-200/80 bg-white shadow-sm">
-      <Image
-        src={wallet.logoPath}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={apiPath(wallet.logoPath)}
         alt=""
         width={44}
         height={44}
