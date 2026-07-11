@@ -96,7 +96,15 @@ export async function POST(req: Request) {
       expiryUnix: decoded.expiryUnix,
     });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Invoice failed";
+    let message = e instanceof Error ? e.message : "Invoice failed";
+    const lower = message.toLowerCase();
+    if (
+      lower.includes("invoice creation failed") ||
+      lower.includes("could not create invoice")
+    ) {
+      message =
+        "This shop’s wallet could not create an invoice. Try another shop or amount.";
+    }
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
 }

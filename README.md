@@ -13,8 +13,15 @@ nano .env
 
 Fill in:
 - `BLINK_API_KEY` — from Blink dashboard
-- `BLINK_USD_WALLET_ID` — your Blink wallet ID
+- `BLINK_BTC_WALLET_ID` — your Blink BTC wallet ID
 - `REWARD_SATS` — reward amount (default 500)
+- `MERCHANT_DAILY_REWARD_LIMIT` — max rewards per shop per day (default 5)
+- `MIN_SPEND_SATS_FOR_REWARD` — minimum spend to earn a reward (default 1000)
+
+Rules:
+- Spend at least 1,000 sats to earn a reward
+- One reward per shop per wallet per day
+- Each shop can trigger at most 5 rewards per day
 
 ## Deploy on VPS
 

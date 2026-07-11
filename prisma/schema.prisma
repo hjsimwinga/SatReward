@@ -35,13 +35,15 @@ model Payment {
 }
 
 model DailyReward {
-  id            String   @id @default(cuid())
-  rewardAddress String
-  rewardDate    String
-  paymentId     String
-  rewardSats    Int
-  createdAt     DateTime @default(now())
+  id              String   @id @default(cuid())
+  rewardAddress   String
+  merchantAddress String
+  rewardDate      String
+  paymentId       String
+  rewardSats      Int
+  createdAt       DateTime @default(now())
 
-  @@unique([rewardAddress, rewardDate])
+  @@unique([rewardAddress, merchantAddress, rewardDate])
+  @@index([merchantAddress, rewardDate])
   @@map("daily_rewards")
 }

@@ -36,24 +36,17 @@ export function AmountInput({ value, onChange, disabled }: Props) {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-2xl bg-stone-50/70 px-4 py-5 ring-1 ring-stone-100/80">
-        <p className="text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-400">
-          Amount to pay
-        </p>
-
+      <div className="rounded-[20px] bg-gradient-to-b from-wash to-[#eef3f7] px-4 py-6 text-center ring-1 ring-line shadow-[0_1px_0_rgb(255_255_255_/_0.8)_inset]">
+        <p className="label-quiet">Amount</p>
         <div className="mt-2 flex items-baseline justify-center gap-1">
-          <span className="text-3xl font-bold text-stone-400">K</span>
-          <p className="text-5xl font-bold tabular-nums tracking-tight text-stone-900">
-            {displayAmount(value)}
-          </p>
+          <span className="font-display text-3xl text-mute/60">K</span>
+          <p className="font-display text-5xl tnum text-ink">{displayAmount(value)}</p>
         </div>
-
-        <p className="mt-1 text-center text-sm font-medium text-stone-400">Zambian Kwacha</p>
-
+        <p className="mt-1.5 text-sm font-medium text-mute">Zambian Kwacha</p>
         {satsPreview != null && (
-          <p className="mt-3 text-center text-sm text-stone-500">
+          <p className="mt-3 text-sm text-mute">
             ≈{" "}
-            <span className="font-semibold text-stone-700">
+            <span className="font-semibold tnum text-ink-soft">
               {satsPreview.toLocaleString()} sats
             </span>
           </p>

@@ -19,7 +19,6 @@ import {
 import { apiPath } from "@/lib/apiPath";
 
 type Step = "address" | "merchant" | "pay" | "done";
-
 type RewardState = "loading" | "sent" | "skipped" | "failed";
 
 const POLL_MS = 2500;
@@ -30,15 +29,35 @@ function StepDots({ step }: { step: Step }) {
   if (step === "done") return null;
   const idx = STEPS.indexOf(step);
   return (
-    <div className="mb-4 flex justify-center gap-2">
+    <div className="mb-5 flex items-center justify-center gap-2.5" aria-hidden>
       {STEPS.map((s, i) => (
         <div
           key={s}
-          className={`h-1.5 rounded-full transition-all ${
-            i <= idx ? "w-6 bg-blue-600" : "w-1.5 bg-stone-200"
+          className={`h-1 rounded-full transition-all duration-500 ease-out ${
+            i < idx
+              ? "w-7 bg-gold/40"
+              : i === idx
+                ? "w-9 bg-gold"
+                : "w-7 bg-line"
           }`}
         />
       ))}
+    </div>
+  );
+}
+
+function SuccessMark() {
+  return (
+    <div className="mx-auto flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[20px] bg-gradient-to-b from-rise/15 to-rise/5 ring-1 ring-rise/20 shadow-[0_8px_24px_-12px_rgb(15_140_125_/_0.45)]">
+      <svg
+        className="h-8 w-8 text-rise"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
     </div>
   );
 }
@@ -59,13 +78,15 @@ export default function HomePage() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [paidZmw, setPaidZmw] = useState(0);
 
-  const [rewardSent, setRewardSent] = useState(false);
   const [rewardSats, setRewardSats] = useState(0);
   const [skippedReason, setSkippedReason] = useState<string | null>(null);
   const [rewardError, setRewardError] = useState<string | null>(null);
   const [rewardState, setRewardState] = useState<RewardState>("loading");
+  const [poolRefreshToken, setPoolRefreshToken] = useState(0);
+  const [poolSpendSats, setPoolSpendSats] = useState<number | null>(null);
 
   const paidRef = useRef(false);
+  const poolSpendAppliedRef = useRef(false);
 
   useEffect(() => {
     const saved = getRecentRewardAddresses();
@@ -90,25 +111,30 @@ export default function HomePage() {
     setPaymentId(null);
     setPr(null);
     setErr(null);
-    setRewardSent(false);
     setRewardSats(0);
     setSkippedReason(null);
     setRewardError(null);
     setRewardState("loading");
     paidRef.current = false;
+    poolSpendAppliedRef.current = false;
+    setPoolSpendSats(null);
   }, []);
 
   function applyRewardPoll(d: Record<string, unknown>) {
     if (d.rewardSent) {
-      setRewardSent(true);
-      setRewardSats(Number(d.rewardSats ?? 0));
+      const sent = Number(d.rewardSats ?? 0);
+      setRewardSats(sent);
       setSkippedReason(null);
       setRewardError(null);
       setRewardState("sent");
+      if (sent > 0 && !poolSpendAppliedRef.current) {
+        poolSpendAppliedRef.current = true;
+        setPoolSpendSats(sent);
+        setPoolRefreshToken((n) => n + 1);
+      }
       return;
     }
     if (d.rewardSkippedReason) {
-      setRewardSent(false);
       setSkippedReason(String(d.rewardSkippedReason));
       setRewardError(null);
       setRewardState("skipped");
@@ -230,176 +256,281 @@ export default function HomePage() {
   }, [step, paymentId, rewardState]);
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center overflow-x-hidden p-4 pb-8">
-      <div className="w-full max-w-md animate-fade-in">
-        <header className="mb-5 text-center">
-          <p className="mb-3 text-4xl">⚡</p>
-          <h1 className="text-3xl font-bold tracking-tight text-stone-900">SatReward</h1>
-          <p className="mt-1 text-stone-500">Spend sats. Get rewarded.</p>
+    <main className="relative flex min-h-[100dvh] items-center justify-center overflow-x-hidden px-4 py-10 pb-14">
+      <div className="w-full max-w-[440px]">
+        <header className="animate-soft-enter mb-8 text-center">
+          <h1 className="font-display text-[3.25rem] leading-[0.95] text-ink">SatReward</h1>
+          <p className="mt-3 text-[15px] font-medium text-mute">Spend sats. Get rewarded.</p>
         </header>
 
-        <PoolBalanceCard />
-
-        <StepDots step={step} />
-
-        <div className="overflow-hidden rounded-3xl bg-white shadow-xl shadow-stone-200/60 ring-1 ring-stone-100">
-          {step === "address" && (
-            <form onSubmit={goToMerchants} className="px-5 py-6">
-              <label className="mb-2 block text-xs font-semibold text-stone-700">
-                Your Lightning address
-              </label>
-              <LightningAddressInput value={rewardAddress} onChange={setRewardAddress} />
-              <p className="mt-2 text-xs text-stone-400">Your sat reward is sent here</p>
-
-              {err && (
-                <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-center text-sm text-red-700">
-                  {err}
-                </p>
-              )}
-
-              <button
-                type="submit"
-                disabled={!rewardAddress.trim()}
-                className="mt-6 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 py-4 text-lg font-semibold text-white shadow-lg shadow-blue-200/50 transition hover:from-blue-700 hover:to-blue-800 disabled:opacity-50"
-              >
-                Continue
-              </button>
-            </form>
-          )}
-
-          {step === "merchant" && (
-            <div className="px-5 pb-6 pt-4">
-              <BackButton onClick={() => setStep("address")} />
-              <div className="mb-5 flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">
-                    Step 2
-                  </p>
-                  <h2 className="mt-1 text-xl font-semibold tracking-tight text-stone-900">
-                    Choose merchant
-                  </h2>
-                </div>
-                <MerchantQrScanButton merchants={merchants} onMatch={pickMerchant} />
-              </div>
-              <MerchantPicker
-                merchants={merchants}
-                recentAddresses={recentAddresses}
-                selected={null}
-                onSelect={pickMerchant}
-              />
-            </div>
-          )}
-
-          {step === "pay" && (
-            <div className="px-5 pb-6 pt-4">
-              <BackButton
-                onClick={() => {
-                  setPr(null);
-                  setPaymentId(null);
-                  setErr(null);
-                  setStep("merchant");
-                }}
-              />
-
-              <div className="mb-5 text-center">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">
-                  Step 3 · Pay this merchant
-                </p>
-                <p className="mt-1 text-xl font-semibold tracking-tight text-stone-900">
-                  {merchantName}
-                </p>
-              </div>
-
-              {!pr ? (
-                <form onSubmit={(e) => void createInvoice(e)}>
-                  <AmountInput
-                    value={amountZmw}
-                    onChange={setAmountZmw}
-                    disabled={loading}
-                  />
-                  {err && (
-                    <p className="mt-4 rounded-xl bg-red-50 px-3 py-2 text-center text-sm text-red-700">
-                      {err}
-                    </p>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={
-                      loading || !amountZmw || parseFloat(amountZmw) <= 0
-                    }
-                    className="mt-5 w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 py-4 text-lg font-semibold text-white shadow-lg shadow-blue-200/50 transition active:scale-[0.99] disabled:opacity-50"
-                  >
-                    {loading ? "Creating invoice…" : "Get invoice"}
-                  </button>
-                </form>
-              ) : (
-                <div className="flex flex-col items-center space-y-4">
-                  <div className="text-center">
-                    <p className="text-4xl font-bold text-stone-900">K{paidZmw.toFixed(2)}</p>
-                    <p className="mt-1 text-sm text-stone-500">
-                      {paidAmount.toLocaleString()} sats
-                    </p>
-                  </div>
-                  <QRDisplay value={pr} copyOnTap />
-                  <PayInWalletButton invoice={pr} />
-                </div>
-              )}
-            </div>
-          )}
-
-          {step === "done" && (
-            <div className="space-y-4 px-5 py-6 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-3xl">
-                ✅
-              </div>
-
-              <div>
-                <p className="text-lg font-semibold text-stone-900">Payment successful!</p>
-                <p className="mt-1 text-sm text-stone-500">
-                  {merchantName} received K{paidZmw.toFixed(2)}
-                </p>
-              </div>
-
-              {rewardState === "loading" && (
-                <RewardLoading address={rewardAddress} />
-              )}
-
-              {rewardState === "sent" && (
-                <div className="animate-fade-in rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100/80 px-4 py-3 ring-1 ring-blue-100">
-                  <p className="text-sm font-medium text-stone-800">
-                    🎁 {rewardSats.toLocaleString()} sats reward sent to
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-blue-600">{rewardAddress}</p>
-                </div>
-              )}
-
-              {rewardState === "skipped" && skippedReason === "already_claimed_today" && (
-                <div className="animate-fade-in rounded-2xl bg-stone-50 px-4 py-3 ring-1 ring-stone-100">
-                  <p className="text-sm text-stone-600">
-                    <span className="font-semibold text-stone-800">{rewardAddress}</span> already
-                    received today&apos;s reward.
-                  </p>
-                </div>
-              )}
-
-              {rewardState === "failed" && rewardError && (
-                <div className="animate-fade-in rounded-2xl bg-amber-50 px-4 py-3 ring-1 ring-amber-100">
-                  <p className="text-sm text-amber-900">Reward pending: {rewardError}</p>
-                </div>
-              )}
-
-              <button
-                type="button"
-                onClick={reset}
-                className="w-full rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 py-3.5 font-semibold text-white shadow-lg shadow-blue-200/50"
-              >
-                Start again
-              </button>
-            </div>
-          )}
+        <div className="animate-soft-enter-delay">
+          <PoolBalanceCard refreshToken={poolRefreshToken} spendSats={poolSpendSats} />
         </div>
 
-        {step === "address" && <AboutSatReward />}
+        <div className="animate-soft-enter-delay-2">
+          <StepDots step={step} />
+
+          <div className="card">
+            {step !== "done" && (
+              <div className="relative z-[1] px-6 pb-2 pt-6">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-gold/[0.08] to-transparent" />
+                <p className="relative label-quiet text-center">Get sats back for spending</p>
+              </div>
+            )}
+
+            {step === "address" && (
+              <form onSubmit={goToMerchants} className="relative z-[1] px-6 py-6">
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-sky-100/30 to-transparent" />
+                <label className="relative mb-2.5 flex items-center gap-2">
+                  <svg
+                    className="h-3.5 w-3.5 shrink-0 text-gold"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <path d="M13.2 2.1 5.4 13.4c-.25.36 0 .85.43.85h5.02l-1.2 7.4c-.1.62.7.98 1.12.5l8.1-11.1c.27-.37.01-.9-.44-.9h-5.2l1.35-7.55c.1-.58-.66-.93-1.08-.5Z" />
+                  </svg>
+                  <span className="text-[12px] font-semibold tracking-[0.04em] text-ink-soft">
+                    Your Lightning address
+                  </span>
+                </label>
+                <div className="relative">
+                  <LightningAddressInput value={rewardAddress} onChange={setRewardAddress} />
+                </div>
+
+                {err && (
+                  <p className="relative mt-4 rounded-[14px] bg-red-50 px-3.5 py-2.5 text-center text-sm text-red-700 ring-1 ring-red-100">
+                    {err}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={!rewardAddress.trim()}
+                  className="btn-primary relative mt-7"
+                >
+                  Continue
+                </button>
+              </form>
+            )}
+
+            {step === "merchant" && (
+              <div className="relative z-[1] px-6 pb-6 pt-3">
+                <div className="mb-4 flex items-center justify-between">
+                  <BackButton onClick={() => setStep("address")} />
+                  <MerchantQrScanButton merchants={merchants} onMatch={pickMerchant} />
+                </div>
+                <MerchantPicker
+                  merchants={merchants}
+                  recentAddresses={recentAddresses}
+                  selected={null}
+                  onSelect={pickMerchant}
+                />
+              </div>
+            )}
+
+            {step === "pay" && (
+              <div className="relative z-[1] px-6 pb-6 pt-3">
+                <BackButton
+                  onClick={() => {
+                    setPr(null);
+                    setPaymentId(null);
+                    setErr(null);
+                    setStep("merchant");
+                  }}
+                />
+
+                <p className="mb-5 text-center text-sm font-medium text-mute">
+                  Paying <span className="font-semibold text-ink">{merchantName}</span>
+                </p>
+
+                {!pr ? (
+                  <form onSubmit={(e) => void createInvoice(e)}>
+                    <AmountInput value={amountZmw} onChange={setAmountZmw} disabled={loading} />
+                    {err && (
+                      <p className="mt-4 rounded-[14px] bg-red-50 px-3.5 py-2.5 text-center text-sm text-red-700 ring-1 ring-red-100">
+                        {err}
+                      </p>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={loading || !amountZmw || parseFloat(amountZmw) <= 0}
+                      className="btn-primary mt-6"
+                    >
+                      {loading ? "Creating invoice…" : "Get invoice"}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="flex flex-col items-center space-y-5 animate-fade-in">
+                    <div className="text-center">
+                      <div className="flex items-center justify-center gap-2.5">
+                        <p className="font-display text-[2.85rem] leading-none text-ink tnum">
+                          K{paidZmw.toFixed(2)}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPr(null);
+                            setPaymentId(null);
+                            setErr(null);
+                            paidRef.current = false;
+                          }}
+                          aria-label="Change amount"
+                          className="tap-none group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-gradient-to-b from-white to-[#f4f2ee] text-mute shadow-[0_1px_0_rgb(255_255_255)_inset,0_4px_12px_-6px_rgb(15_23_42/0.18)] ring-1 ring-line/80 transition duration-200 hover:text-accent hover:ring-gold/35 active:scale-90"
+                        >
+                          <span className="pointer-events-none absolute inset-0 rounded-[12px] bg-gold/0 transition group-hover:bg-gold/[0.06] group-active:bg-gold/10" />
+                          <svg
+                            className="relative h-[15px] w-[15px] transition duration-200 group-hover:scale-110 group-active:scale-95"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            aria-hidden
+                          >
+                            <path
+                              d="M4.5 19.5 9 18l9.4-9.4a2.1 2.1 0 0 0 0-3L16.4 3.6a2.1 2.1 0 0 0-3 0L4 13l-1.5 5.5Z"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinejoin="round"
+                            />
+                            <path
+                              d="m12.8 5.2 4 4"
+                              stroke="currentColor"
+                              strokeWidth="1.8"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                      <p className="mt-2 text-sm text-mute tnum">
+                        {paidAmount.toLocaleString()} sats
+                      </p>
+                    </div>
+                    <QRDisplay value={pr} copyOnTap />
+                    <PayInWalletButton invoice={pr} />
+                    <p className="text-xs font-medium text-mute">Open your wallet and scan</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {step === "done" && (
+              <div className="relative z-[1] space-y-5 px-6 py-9 text-center animate-fade-in">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-rise/[0.06] to-transparent" />
+                <SuccessMark />
+
+                <div className="relative">
+                  <p className="font-display text-[2.15rem] text-ink">Payment done</p>
+                  <p className="mt-2 text-sm text-mute">
+                    {merchantName} received K{paidZmw.toFixed(2)}
+                  </p>
+                </div>
+
+                {rewardState === "loading" && <RewardLoading address={rewardAddress} />}
+
+                {rewardState === "sent" && (
+                  <div className="relative animate-fade-in rounded-[18px] bg-gradient-to-b from-[#f2faf8] to-[#eef7f5] px-4 py-4 ring-1 ring-rise/15">
+                    <p className="text-sm font-medium text-ink-soft">
+                      {rewardSats.toLocaleString()} sats sent to
+                    </p>
+                    <p className="mt-1 truncate text-sm font-semibold text-ink">{rewardAddress}</p>
+                  </div>
+                )}
+
+                {rewardState === "skipped" &&
+                  (skippedReason === "already_claimed_merchant_today" ||
+                    skippedReason === "already_claimed_today") && (
+                  <div className="relative animate-fade-in rounded-[18px] bg-wash px-4 py-4 ring-1 ring-line">
+                    <p className="text-sm text-mute">
+                      <span className="font-semibold text-ink">{rewardAddress}</span> already got
+                      a reward from this shop today.
+                    </p>
+                  </div>
+                )}
+
+                {rewardState === "skipped" && skippedReason === "merchant_daily_limit" && (
+                  <div className="relative animate-fade-in overflow-hidden rounded-[18px] px-4 py-4 ring-1 ring-line/90">
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_70%_at_50%_0%,rgb(255_248_230/0.9),transparent_60%),linear-gradient(165deg,#ffffff_0%,#faf8f4_100%)]" />
+                    <div className="relative text-center">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
+                        Reward
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-ink">
+                        This shop can’t trigger more rewards today.
+                      </p>
+                      <p className="mt-1.5 text-[13px] leading-relaxed text-mute">
+                        Try another shop.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {rewardState === "skipped" && skippedReason === "below_min_spend" && (
+                  <div className="relative animate-fade-in overflow-hidden rounded-[18px] px-4 py-4 ring-1 ring-line/90">
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_70%_at_50%_0%,rgb(255_248_230/0.9),transparent_60%),linear-gradient(165deg,#ffffff_0%,#faf8f4_100%)]" />
+                    <div className="relative text-center">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
+                        Reward
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-ink">Spend a bit more</p>
+                      <p className="mt-1.5 text-[13px] leading-relaxed text-mute">
+                        Spend at least 1,000 sats to earn a reward.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {rewardState === "skipped" && skippedReason === "pool_empty" && (
+                  <div className="relative animate-fade-in overflow-hidden rounded-[18px] px-4 py-4 ring-1 ring-line/90">
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_70%_at_50%_0%,rgb(255_248_230/0.9),transparent_60%),linear-gradient(165deg,#ffffff_0%,#faf8f4_100%)]" />
+                    <div className="relative text-center">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
+                        Reward
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-ink">Reward pool is empty</p>
+                      <p className="mt-1.5 text-[13px] leading-relaxed text-mute">
+                        No sats reward this time.
+                        <br />
+                        Come back later.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {rewardState === "skipped" &&
+                  skippedReason &&
+                  skippedReason !== "already_claimed_merchant_today" &&
+                  skippedReason !== "already_claimed_today" &&
+                  skippedReason !== "merchant_daily_limit" &&
+                  skippedReason !== "below_min_spend" &&
+                  skippedReason !== "pool_empty" && (
+                  <div className="relative animate-fade-in rounded-[18px] bg-wash px-4 py-4 ring-1 ring-line">
+                    <p className="text-sm text-mute">No reward this time.</p>
+                  </div>
+                )}
+
+                {rewardState === "failed" && rewardError && (
+                  <div className="relative animate-fade-in overflow-hidden rounded-[18px] px-4 py-4 ring-1 ring-line/90">
+                    <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(165deg,#ffffff_0%,#faf8f4_100%)]" />
+                    <div className="relative text-center">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
+                        Reward
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-ink">Reward not sent yet</p>
+                      <p className="mt-1.5 text-[13px] leading-relaxed text-mute">
+                        Come back later and try again.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <button type="button" onClick={reset} className="btn-primary relative">
+                  Start again
+                </button>
+              </div>
+            )}
+          </div>
+
+          {step === "address" && <AboutSatReward />}
+        </div>
       </div>
     </main>
   );

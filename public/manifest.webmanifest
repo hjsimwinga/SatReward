@@ -1,0 +1,39 @@
+{
+  "name": "SatReward",
+  "short_name": "SatReward",
+  "description": "Spend sats. Get rewarded.",
+  "start_url": "/satreward/",
+  "scope": "/satreward/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f4ef",
+  "theme_color": "#c9a24a",
+  "lang": "en",
+  "categories": ["finance", "lifestyle"],
+  "icons": [
+    {
+      "src": "/satreward/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/satreward/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/satreward/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/satreward/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

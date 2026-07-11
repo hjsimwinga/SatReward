@@ -1,37 +1,146 @@
 [
   {
-    "name": "BitZed",
-    "lightningAddress": "bitzed@blink.sv",
-    "tagline": "Bitcoin payments"
+    "name": "Mundayam Restaurant",
+    "lightningAddress": "mundayamirestaurant@blink.sv"
   },
   {
-    "name": "HJ Simwinga",
-    "lightningAddress": "hjsimwinga@blink.sv",
-    "tagline": "Blink wallet"
+    "name": "Piotech Centre",
+    "lightningAddress": "allanmwewa@blink.sv"
   },
   {
-    "name": "HJ Simwinga",
-    "lightningAddress": "hjsimwinga@walletofsatoshi.com",
-    "tagline": "Wallet of Satoshi"
+    "name": "MadiTech",
+    "lightningAddress": "madtech@blink.sv"
   },
   {
-    "name": "My Dad",
-    "lightningAddress": "mydad@blink.sv",
-    "tagline": "Blink wallet"
+    "name": "Wasu Barber",
+    "lightningAddress": "wasubarber@blink.sv"
   },
   {
-    "name": "HJ Simwinga 1",
-    "lightningAddress": "hjsimwinga1@blink.sv",
-    "tagline": "Blink wallet"
+    "name": "Blazing Voices",
+    "lightningAddress": "aspiretoinspire1@blink.sv"
   },
   {
-    "name": "John",
-    "lightningAddress": "john@blink.sv",
-    "tagline": "Blink wallet"
+    "name": "Dajaso",
+    "lightningAddress": "icstech@blink.sv"
   },
   {
-    "name": "Rin",
-    "lightningAddress": "rin@blink.sv",
-    "tagline": "Blink wallet"
+    "name": "Sombo Groceries",
+    "lightningAddress": "sombo_groceries@blink.sv"
+  },
+  {
+    "name": "Catherine Mbao Greens",
+    "lightningAddress": "catherinembao@blink.sv"
+  },
+  {
+    "name": "Doris Mweetwa",
+    "lightningAddress": "dorismweetwa@blink.sv"
+  },
+  {
+    "name": "Alice Luzendos",
+    "lightningAddress": "aliceluzendo@blink.sv"
+  },
+  {
+    "name": "Evinatty Greens",
+    "lightningAddress": "evinatty@blink.sv"
+  },
+  {
+    "name": "Judy's grocery & fruits",
+    "lightningAddress": "groceryandfruits@blink.sv"
+  },
+  {
+    "name": "Andrews Grocery",
+    "lightningAddress": "andrewhankonje@blink.sv"
+  },
+  {
+    "name": "Wakisa M General Dealers",
+    "lightningAddress": "wakisamgeneraldealers@blink.sv"
+  },
+  {
+    "name": "Sam The Barber",
+    "lightningAddress": "samdebarber@blink.sv"
+  },
+  {
+    "name": "Mwaka Mo Cosmetics",
+    "lightningAddress": "monde@blink.sv"
+  },
+  {
+    "name": "Jollyboys bar and restaurant",
+    "lightningAddress": "jollybar@blink.sv"
+  },
+  {
+    "name": "Harriet Restaurant and Laundry",
+    "lightningAddress": "harrietrestaurant@blink.sv"
+  },
+  {
+    "name": "Sweet & Salty Cafe",
+    "lightningAddress": "sweetandsalty@blink.sv"
+  },
+  {
+    "name": "Revival Safaris",
+    "lightningAddress": "revivalsafarisandtours@blink.sv"
+  },
+  {
+    "name": "Stop Shop",
+    "lightningAddress": "stopshop@blink.sv"
+  },
+  {
+    "name": "JM General Dealers",
+    "lightningAddress": "gmgeneraldealers@blink.sv"
+  },
+  {
+    "name": "Liberty Trading Point",
+    "lightningAddress": "libertytrading@blink.sv"
+  },
+  {
+    "name": "Bhive Restaurant, Bar and Gym",
+    "lightningAddress": "mutintabm@blink.sv"
+  },
+  {
+    "name": "Jobes Food Center",
+    "lightningAddress": "jobesafoodcenter@blink.sv"
+  },
+  {
+    "name": "Haven Car Spa",
+    "lightningAddress": "millanmukuka@blink.sv"
+  },
+  {
+    "name": "Famous Barbershop",
+    "lightningAddress": "famousbarbershop@blink.sv"
+  },
+  {
+    "name": "Twapel & Sons Hardware",
+    "lightningAddress": "leekawana@blink.sv"
+  },
+  {
+    "name": "Mercy Hair Salon",
+    "lightningAddress": "mercyshop@blink.sv"
+  },
+  {
+    "name": "Chipo Beauty Salon",
+    "lightningAddress": "kapolesa22@blink.sv"
+  },
+  {
+    "name": "New Vessel Technology",
+    "lightningAddress": "davidtdsmulinta@blink.sv"
+  },
+  {
+    "name": "T Enterprise",
+    "lightningAddress": "it_enterprise@blink.sv"
+  },
+  {
+    "name": "Catia's Shawarmas",
+    "lightningAddress": "catias_shawarmas_hot_wings@blink.sv"
+  },
+  {
+    "name": "Will J Nduna Arts",
+    "lightningAddress": "willjnduna@blink.sv"
+  },
+  {
+    "name": "Mukuni Curio 48",
+    "lightningAddress": "mukunipark48@blink.sv"
+  },
+  {
+    "name": "Camp Kiosk",
+    "lightningAddress": "campkiosk@blink.sv"
   }
 ]

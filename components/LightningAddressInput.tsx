@@ -7,6 +7,78 @@ type Props = {
   onChange: (value: string) => void;
 };
 
+function PasteIcon() {
+  return (
+    <svg
+      className="h-[18px] w-[18px] shrink-0 drop-shadow-[0_1px_1px_rgb(0_0_0/0.18)]"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <rect
+        x="5"
+        y="7"
+        width="14"
+        height="14"
+        rx="3"
+        fill="currentColor"
+        fillOpacity="0.22"
+      />
+      <rect
+        x="5"
+        y="7"
+        width="14"
+        height="14"
+        rx="3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M9 7.25V6.2A2.2 2.2 0 0 1 11.2 4h1.6A2.2 2.2 0 0 1 15 6.2v1.05"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <rect
+        x="9.25"
+        y="4.75"
+        width="5.5"
+        height="3.1"
+        rx="1.2"
+        fill="currentColor"
+        fillOpacity="0.95"
+      />
+      <path
+        d="M9 12.25h6M9 15.5h4.25"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        opacity="0.9"
+      />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg
+      className="h-[18px] w-[18px] shrink-0 drop-shadow-[0_1px_1px_rgb(0_0_0/0.18)]"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="9" fill="currentColor" fillOpacity="0.22" />
+      <path
+        d="M7.5 12.4 10.6 15.5 16.5 8.8"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function LightningAddressInput({ value, onChange }: Props) {
   const [pasting, setPasting] = useState(false);
   const [pasted, setPasted] = useState(false);
@@ -31,44 +103,28 @@ export function LightningAddressInput({ value, onChange }: Props) {
 
   return (
     <div className="relative">
-        <input
-          type="text"
-          required
-          autoComplete="off"
-          placeholder="you@wallet.com"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full rounded-xl border border-stone-200 bg-stone-50 py-3.5 pl-4 pr-[5.5rem] text-stone-900 outline-none transition placeholder:text-stone-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
-        />
+      <input
+        type="text"
+        required
+        autoComplete="off"
+        inputMode="email"
+        placeholder="you@wallet.com"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="field pr-[7.75rem]"
+      />
 
-        <button
-          type="button"
-          onClick={() => void handlePaste()}
-          className={`absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold tracking-wide transition-all duration-300 ease-out active:scale-[0.88] ${
-            pasted
-              ? "bg-green-500 text-white shadow-md shadow-green-200"
-              : "bg-blue-600 text-white hover:bg-blue-700 hover:shadow-md hover:shadow-blue-200/50"
-          } ${pasting ? "scale-90" : "scale-100"}`}
-        >
-          {pasted ? (
-            <>
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-              </svg>
-              Pasted
-            </>
-          ) : (
-            <>
-              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-                />
-              </svg>
-              Paste
-            </>
-        )}
+      <button
+        type="button"
+        onClick={() => void handlePaste()}
+        className={`absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-2 rounded-[13px] px-3.5 py-2 text-xs font-semibold tracking-wide text-white transition-all duration-300 ease-out active:scale-[0.92] ${
+          pasted
+            ? "bg-rise shadow-[0_1px_0_rgb(255_255_255/0.2)_inset,0_4px_10px_-4px_rgb(16_185_129/0.45)]"
+            : "bg-gradient-to-b from-[#d4b56a] to-accent-deep shadow-[0_1px_0_rgb(255_255_255/0.3)_inset,0_6px_14px_-6px_rgb(148_112_52/0.5)] hover:brightness-105"
+        } ${pasting ? "scale-90" : "scale-100"}`}
+      >
+        {pasted ? <CheckIcon /> : <PasteIcon />}
+        {pasted ? "Pasted" : "Paste"}
       </button>
     </div>
   );

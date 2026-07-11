@@ -10,28 +10,23 @@ export function BackButton({ onClick, className = "" }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className={`group mb-4 inline-flex items-center gap-1.5 rounded-full py-1.5 pl-1 pr-3 text-sm font-semibold text-stone-500 transition-all duration-200 hover:bg-stone-100 hover:text-stone-800 active:scale-95 ${className}`}
+      aria-label="Back"
+      className={`tap-none inline-flex items-center text-ink-soft transition duration-200 hover:text-ink active:scale-95 ${className}`}
     >
-      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-100 transition-colors group-hover:bg-white group-hover:shadow-sm">
+      <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-gradient-to-b from-white to-[#f4f2ee] shadow-[0_1px_0_rgb(255_255_255)_inset,0_4px_12px_-6px_rgb(15_23_42/0.18)] ring-1 ring-line/80 transition hover:ring-gold/30">
         <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
+          className="h-5 w-5"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth={2}
+          strokeWidth={2.25}
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden
         >
-          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-          <path d="M5 12l14 0" />
-          <path d="M5 12l4 4" />
-          <path d="M5 12l4 -4" />
+          <path d="M15 6l-6 6 6 6" />
         </svg>
       </span>
-      Back
     </button>
   );
 }

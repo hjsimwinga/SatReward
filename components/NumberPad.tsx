@@ -41,7 +41,7 @@ export function NumberPad({ value, onChange, disabled }: Props) {
   const keys = [...ROW1, ...ROW2];
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2">
       <div className="grid grid-cols-5 gap-2">
         {keys.map((k) => (
           <button
@@ -49,7 +49,7 @@ export function NumberPad({ value, onChange, disabled }: Props) {
             type="button"
             disabled={disabled}
             onClick={() => press(k)}
-            className="tap-none flex h-12 items-center justify-center rounded-xl bg-stone-50 text-lg font-semibold text-stone-900 ring-1 ring-stone-100 transition-all duration-150 hover:bg-white hover:shadow-sm hover:ring-stone-200/80 active:scale-[0.96] disabled:opacity-40"
+            className="tap-none flex h-12 items-center justify-center rounded-[14px] bg-gradient-to-b from-white to-wash text-lg font-semibold text-ink ring-1 ring-line shadow-[0_1px_0_rgb(255_255_255)_inset] transition duration-150 hover:to-[#e8eef4] active:scale-[0.96] disabled:opacity-40"
           >
             {k}
           </button>
@@ -61,7 +61,7 @@ export function NumberPad({ value, onChange, disabled }: Props) {
           type="button"
           disabled={disabled}
           onClick={() => press(".")}
-          className="tap-none flex h-11 items-center justify-center rounded-xl bg-stone-50 text-lg font-semibold text-stone-900 ring-1 ring-stone-100 transition-all duration-150 hover:bg-white hover:shadow-sm hover:ring-stone-200/80 active:scale-[0.96] disabled:opacity-40"
+          className="tap-none flex h-11 items-center justify-center rounded-[14px] bg-gradient-to-b from-white to-wash text-lg font-semibold text-ink ring-1 ring-line shadow-[0_1px_0_rgb(255_255_255)_inset] transition duration-150 hover:to-[#e8eef4] active:scale-[0.96] disabled:opacity-40"
         >
           .
         </button>
@@ -69,7 +69,7 @@ export function NumberPad({ value, onChange, disabled }: Props) {
           type="button"
           disabled={disabled}
           onClick={() => press("⌫")}
-          className="tap-none flex h-11 items-center justify-center rounded-xl bg-stone-100/80 text-lg font-semibold text-stone-500 ring-1 ring-stone-200/60 transition-all duration-150 hover:bg-stone-200/60 active:scale-[0.96] disabled:opacity-40"
+          className="tap-none flex h-11 items-center justify-center rounded-[14px] bg-[#eef1f4] text-lg font-semibold text-mute ring-1 ring-line transition duration-150 hover:bg-[#e8ecf0] active:scale-[0.96] disabled:opacity-40"
         >
           ⌫
         </button>

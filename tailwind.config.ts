@@ -7,29 +7,35 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "Georgia", "serif"],
+      },
       colors: {
-        surface: {
-          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
-          muted: "rgb(var(--surface-muted) / <alpha-value>)",
+        ink: {
+          DEFAULT: "rgb(var(--ink) / <alpha-value>)",
+          soft: "rgb(var(--ink-soft) / <alpha-value>)",
         },
+        mute: "rgb(var(--mute) / <alpha-value>)",
+        line: {
+          DEFAULT: "rgb(var(--line) / <alpha-value>)",
+          soft: "rgb(var(--line-soft) / <alpha-value>)",
+        },
+        wash: "rgb(var(--wash) / <alpha-value>)",
         accent: {
           DEFAULT: "rgb(var(--accent) / <alpha-value>)",
-          dim: "rgb(var(--accent-dim) / <alpha-value>)",
+          deep: "rgb(var(--accent-deep) / <alpha-value>)",
         },
-      },
-      animation: {
-        "fade-in": "fadeIn 0.25s ease-out",
-        pulseSoft: "pulseSoft 2s ease-in-out infinite",
-      },
-      keyframes: {
-        fadeIn: {
-          "0%": { opacity: "0", transform: "translateY(6px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
+        gold: {
+          DEFAULT: "rgb(var(--gold) / <alpha-value>)",
+          soft: "rgb(var(--gold-soft) / <alpha-value>)",
         },
-        pulseSoft: {
-          "0%, 100%": { opacity: "0.5" },
-          "50%": { opacity: "1" },
+        vault: {
+          DEFAULT: "rgb(var(--vault-a) / <alpha-value>)",
+          deep: "rgb(var(--vault-b) / <alpha-value>)",
         },
+        rise: "rgb(var(--rise) / <alpha-value>)",
+        fall: "rgb(var(--fall) / <alpha-value>)",
       },
     },
   },

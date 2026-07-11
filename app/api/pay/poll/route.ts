@@ -34,7 +34,10 @@ export async function POST(req: Request) {
       let rewardSkippedReason = payment.rewardSkippedReason;
       let rewardError: string | undefined;
 
-      if (!payment.rewardSent && !payment.rewardSkippedReason) {
+      // Prefer a successful send over a stale skipped flag from a poll race.
+      if (rewardSent) {
+        rewardSkippedReason = null;
+      } else if (!rewardSkippedReason) {
         const reward = await processReward(id);
         rewardSent = reward.rewardSent;
         rewardSats = reward.rewardSats;
@@ -50,7 +53,7 @@ export async function POST(req: Request) {
         rewardAddress: payment.rewardAddress,
         rewardSent,
         rewardSats,
-        rewardSkippedReason,
+        rewardSkippedReason: rewardSent ? null : rewardSkippedReason,
         rewardError,
         rewardPending: !rewardSent && !rewardSkippedReason,
         paymentHash: payment.paymentHash,
@@ -111,7 +114,7 @@ export async function POST(req: Request) {
         rewardAddress: payment.rewardAddress,
         rewardSent: reward.rewardSent,
         rewardSats: reward.rewardSats,
-        rewardSkippedReason: reward.skippedReason,
+        rewardSkippedReason: reward.rewardSent ? null : reward.skippedReason,
         rewardError: reward.error,
         rewardPending: !reward.rewardSent && !reward.skippedReason,
         paymentHash: payment.paymentHash,

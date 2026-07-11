@@ -14,9 +14,12 @@ const SEND_LN_ADDRESS_PAYMENT_MUTATION = `
   }
 `;
 
+function useStablesats(): boolean {
+  return process.env.BLINK_USE_STABLESATS === "true";
+}
+
 function getSendWalletId(): string {
-  const useStable = process.env.BLINK_USE_STABLESATS !== "false";
-  const walletId = useStable
+  const walletId = useStablesats()
     ? process.env.BLINK_USD_WALLET_ID
     : process.env.BLINK_BTC_WALLET_ID || process.env.BLINK_WALLET_ID;
   if (!walletId) throw new Error("Blink wallet ID not configured");
@@ -42,13 +45,32 @@ function getReceiveWalletId(): string {
   return getSendWalletId();
 }
 
-const NO_AMOUNT_INVOICE_MUTATION = `
-  mutation LnNoAmountInvoiceCreate($input: LnNoAmountInvoiceCreateInput!) {
-    lnNoAmountInvoiceCreate(input: $input) {
+const BTC_INVOICE_MUTATION = `
+  mutation LnInvoiceCreate($input: LnInvoiceCreateInput!) {
+    lnInvoiceCreate(input: $input) {
       invoice {
         paymentRequest
         paymentHash
         paymentSecret
+        satoshis
+      }
+      errors {
+        message
+      }
+    }
+  }
+`;
+
+const USD_SATS_INVOICE_MUTATION = `
+  mutation LnUsdInvoiceBtcDenominatedCreateOnBehalfOfRecipient(
+    $input: LnUsdInvoiceBtcDenominatedCreateOnBehalfOfRecipientInput!
+  ) {
+    lnUsdInvoiceBtcDenominatedCreateOnBehalfOfRecipient(input: $input) {
+      invoice {
+        paymentRequest
+        paymentHash
+        paymentSecret
+        satoshis
       }
       errors {
         message
@@ -71,25 +93,91 @@ const INVOICE_STATUS_QUERY = `
 export type DonationInvoice = {
   paymentRequest: string;
   paymentHash: string;
+  amountSats: number;
 };
 
-export async function createPoolDonationInvoice(): Promise<DonationInvoice> {
+const ABS_MIN_DONATION_SATS = 1;
+const MAX_DONATION_SATS = 10_000_000;
+
+/** Blink USD wallets reject invoices below ~1 US cent. */
+export async function getMinDonationSats(): Promise<number> {
+  if (!useStablesats()) return ABS_MIN_DONATION_SATS;
+
   const apiKey = process.env.BLINK_API_KEY;
-  const walletId = getReceiveWalletId();
+  if (!apiKey) return 21;
+
+  try {
+    const response = await axios.post(
+      BLINK_API_URL,
+      {
+        query: `
+          query UsdPrice {
+            realtimePrice(currency: "USD") {
+              btcSatPrice { base offset }
+            }
+          }
+        `,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-KEY": apiKey,
+        },
+        timeout: 10_000,
+      }
+    );
+
+    const centsPerSat = parsePriceAmount(response.data?.data?.realtimePrice?.btcSatPrice);
+    if (centsPerSat == null || centsPerSat <= 0) return 21;
+    return Math.max(ABS_MIN_DONATION_SATS, Math.ceil(1 / centsPerSat));
+  } catch {
+    return 21;
+  }
+}
+
+export async function createPoolDonationInvoice(amountSats: number): Promise<DonationInvoice> {
+  const apiKey = process.env.BLINK_API_KEY;
   if (!apiKey) throw new Error("Blink API key not configured");
+
+  const sats = Math.floor(Number(amountSats));
+  if (!Number.isFinite(sats) || sats < ABS_MIN_DONATION_SATS) {
+    throw new Error("Enter a valid amount in sats");
+  }
+  if (sats > MAX_DONATION_SATS) {
+    throw new Error("Amount is too large");
+  }
+
+  const minSats = await getMinDonationSats();
+  if (sats < minSats) {
+    throw new Error(`Minimum donation is ${minSats.toLocaleString()} sats`);
+  }
+
+  const useStable = useStablesats();
+  const walletId = getReceiveWalletId();
+  const memo = `SatReward pool donation · ${sats.toLocaleString()} sats`;
+
+  const query = useStable ? USD_SATS_INVOICE_MUTATION : BTC_INVOICE_MUTATION;
+  const variables = useStable
+    ? {
+        input: {
+          recipientWalletId: walletId,
+          amount: sats,
+          memo,
+          expiresIn: 15,
+        },
+      }
+    : {
+        input: {
+          walletId,
+          amount: sats,
+          memo,
+          expiresIn: 60,
+        },
+      };
 
   const response = await axios.post(
     BLINK_API_URL,
-    {
-      query: NO_AMOUNT_INVOICE_MUTATION,
-      variables: {
-        input: {
-          walletId,
-          memo: "SatReward pool donation",
-          expiresIn: 60 * 24,
-        },
-      },
-    },
+    { query, variables },
     {
       headers: {
         "Content-Type": "application/json",
@@ -103,7 +191,10 @@ export async function createPoolDonationInvoice(): Promise<DonationInvoice> {
     throw new Error(response.data.errors[0]?.message ?? "Failed to create donation invoice");
   }
 
-  const payload = response.data.data?.lnNoAmountInvoiceCreate;
+  const payload = useStable
+    ? response.data.data?.lnUsdInvoiceBtcDenominatedCreateOnBehalfOfRecipient
+    : response.data.data?.lnInvoiceCreate;
+
   if (payload?.errors?.length) {
     throw new Error(payload.errors[0]?.message ?? "Donation invoice failed");
   }
@@ -116,6 +207,7 @@ export async function createPoolDonationInvoice(): Promise<DonationInvoice> {
   return {
     paymentRequest: invoice.paymentRequest,
     paymentHash: invoice.paymentHash,
+    amountSats: Number(invoice.satoshis) || sats,
   };
 }
 
@@ -234,6 +326,7 @@ export async function getPoolBalance(): Promise<PoolBalance> {
 export type ZmwRate = {
   zmwPerSat: number;
   satsPerZmw: number;
+  minDonationSats: number;
   updatedAt: string;
 };
 
@@ -244,6 +337,9 @@ export async function getZmwRate(): Promise<ZmwRate> {
   const query = `
     query Rate {
       zmwPrice: realtimePrice(currency: "ZMW") {
+        btcSatPrice { base offset }
+      }
+      usdPrice: realtimePrice(currency: "USD") {
         btcSatPrice { base offset }
       }
     }
@@ -272,9 +368,20 @@ export async function getZmwRate(): Promise<ZmwRate> {
     throw new Error("Invalid ZMW rate");
   }
 
+  let minDonationSats = ABS_MIN_DONATION_SATS;
+  if (useStablesats()) {
+    const centsPerSat = parsePriceAmount(response.data?.data?.usdPrice?.btcSatPrice);
+    if (centsPerSat != null && centsPerSat > 0) {
+      minDonationSats = Math.max(ABS_MIN_DONATION_SATS, Math.ceil(1 / centsPerSat));
+    } else {
+      minDonationSats = 21;
+    }
+  }
+
   return {
     zmwPerSat,
     satsPerZmw: 1 / zmwPerSat,
+    minDonationSats,
     updatedAt: new Date().toISOString(),
   };
 }

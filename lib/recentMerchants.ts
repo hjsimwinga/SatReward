@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 
-export async function getRecentMerchantAddresses(limit = 5): Promise<string[]> {
+export async function getRecentMerchantAddresses(limit = 3): Promise<string[]> {
   const paid = await prisma.payment.findMany({
     where: { status: "paid" },
     orderBy: { createdAt: "desc" },

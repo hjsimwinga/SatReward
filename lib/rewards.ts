@@ -1,22 +1,63 @@
 import { prisma } from "@/lib/db";
-import { sendRewardToAddress, getRewardSats } from "@/lib/blink";
+import { sendRewardToAddress, getRewardSats, getPoolBalance } from "@/lib/blink";
 import { normalizeRewardAddress } from "@/lib/sanitize";
 
-export function todayUtc(): string {
-  return new Date().toISOString().slice(0, 10);
+/** Calendar day in Africa/Lusaka (UTC+2, no DST). */
+export function todayInZambia(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lusaka",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
-export async function hasClaimedRewardToday(rewardAddress: string): Promise<boolean> {
-  const normalized = normalizeRewardAddress(rewardAddress);
+/** @deprecated use todayInZambia */
+export function todayUtc(): string {
+  return todayInZambia();
+}
+
+export function getMerchantDailyRewardLimit(): number {
+  const n = parseInt(process.env.MERCHANT_DAILY_REWARD_LIMIT ?? "5", 10);
+  if (!Number.isFinite(n) || n <= 0) return 5;
+  return n;
+}
+
+export function getMinSpendSatsForReward(): number {
+  const n = parseInt(process.env.MIN_SPEND_SATS_FOR_REWARD ?? "1000", 10);
+  if (!Number.isFinite(n) || n <= 0) return 1000;
+  return n;
+}
+
+function normalizeMerchantAddress(input: string): string {
+  return input.trim().toLowerCase();
+}
+
+export async function hasClaimedFromMerchantToday(
+  rewardAddress: string,
+  merchantAddress: string
+): Promise<boolean> {
   const row = await prisma.dailyReward.findUnique({
     where: {
-      rewardAddress_rewardDate: {
-        rewardAddress: normalized,
-        rewardDate: todayUtc(),
+      rewardAddress_merchantAddress_rewardDate: {
+        rewardAddress: normalizeRewardAddress(rewardAddress),
+        merchantAddress: normalizeMerchantAddress(merchantAddress),
+        rewardDate: todayInZambia(),
       },
     },
   });
   return row != null;
+}
+
+/** @deprecated use hasClaimedFromMerchantToday */
+export async function hasClaimedRewardToday(rewardAddress: string): Promise<boolean> {
+  const count = await prisma.dailyReward.count({
+    where: {
+      rewardAddress: normalizeRewardAddress(rewardAddress),
+      rewardDate: todayInZambia(),
+    },
+  });
+  return count > 0;
 }
 
 export type RewardOutcome = {
@@ -26,17 +67,41 @@ export type RewardOutcome = {
   error?: string;
 };
 
+function isUniqueConstraintError(e: unknown): boolean {
+  return (
+    typeof e === "object" &&
+    e !== null &&
+    "code" in e &&
+    (e as { code?: string }).code === "P2002"
+  );
+}
+
+async function markSkipped(
+  paymentId: string,
+  reason: string,
+  amount: number
+): Promise<RewardOutcome> {
+  await prisma.payment.update({
+    where: { id: paymentId },
+    data: { rewardSkippedReason: reason },
+  });
+  return {
+    rewardSent: false,
+    rewardSats: amount,
+    skippedReason: reason,
+  };
+}
+
 export async function processReward(paymentId: string): Promise<RewardOutcome> {
   const payment = await prisma.payment.findUnique({ where: { id: paymentId } });
   if (!payment) {
     return { rewardSent: false, rewardSats: 0, error: "Payment not found" };
   }
 
+  const rewardSats = payment.rewardSats ?? getRewardSats();
+
   if (payment.rewardSent) {
-    return {
-      rewardSent: true,
-      rewardSats: payment.rewardSats ?? getRewardSats(),
-    };
+    return { rewardSent: true, rewardSats };
   }
 
   if (payment.rewardSkippedReason) {
@@ -47,62 +112,153 @@ export async function processReward(paymentId: string): Promise<RewardOutcome> {
     };
   }
 
-  const normalized = normalizeRewardAddress(payment.rewardAddress);
-  const rewardDate = todayUtc();
-  const rewardSats = getRewardSats();
+  const normalizedUser = normalizeRewardAddress(payment.rewardAddress);
+  const normalizedMerchant = normalizeMerchantAddress(payment.merchantAddress);
+  const rewardDate = todayInZambia();
+  const amount = getRewardSats();
+  const merchantLimit = getMerchantDailyRewardLimit();
 
   const existing = await prisma.dailyReward.findUnique({
     where: {
-      rewardAddress_rewardDate: { rewardAddress: normalized, rewardDate },
+      rewardAddress_merchantAddress_rewardDate: {
+        rewardAddress: normalizedUser,
+        merchantAddress: normalizedMerchant,
+        rewardDate,
+      },
     },
   });
 
-  if (existing) {
+  // This payment already reserved / claimed today's shop reward.
+  if (existing?.paymentId === paymentId) {
     await prisma.payment.update({
       where: { id: paymentId },
-      data: { rewardSkippedReason: "already_claimed_today" },
+      data: { rewardSent: true, rewardSats: existing.rewardSats, rewardSkippedReason: null },
     });
-    return {
-      rewardSent: false,
-      rewardSats,
-      skippedReason: "already_claimed_today",
-    };
+    return { rewardSent: true, rewardSats: existing.rewardSats };
   }
 
-  const send = await sendRewardToAddress(payment.rewardAddress, rewardSats);
-  if (!send.success) {
-    return {
-      rewardSent: false,
-      rewardSats,
-      error: send.error ?? "Reward failed",
-    };
+  if (existing) {
+    return markSkipped(paymentId, "already_claimed_merchant_today", amount);
   }
 
+  const minSpend = getMinSpendSatsForReward();
+  if (payment.amountSats < minSpend) {
+    return markSkipped(paymentId, "below_min_spend", amount);
+  }
+
+  const merchantCount = await prisma.dailyReward.count({
+    where: {
+      merchantAddress: normalizedMerchant,
+      rewardDate,
+    },
+  });
+
+  if (merchantCount >= merchantLimit) {
+    return markSkipped(paymentId, "merchant_daily_limit", amount);
+  }
+
+  // Reserve the user+shop daily slot first (race-safe).
   try {
     await prisma.dailyReward.create({
       data: {
-        rewardAddress: normalized,
+        rewardAddress: normalizedUser,
+        merchantAddress: normalizedMerchant,
         rewardDate,
         paymentId,
-        rewardSats,
+        rewardSats: amount,
       },
     });
-  } catch {
-    await prisma.payment.update({
-      where: { id: paymentId },
-      data: { rewardSkippedReason: "already_claimed_today" },
+  } catch (e) {
+    if (!isUniqueConstraintError(e)) {
+      return {
+        rewardSent: false,
+        rewardSats: amount,
+        error: e instanceof Error ? e.message : "Could not claim daily reward",
+      };
+    }
+
+    const raced = await prisma.dailyReward.findUnique({
+      where: {
+        rewardAddress_merchantAddress_rewardDate: {
+          rewardAddress: normalizedUser,
+          merchantAddress: normalizedMerchant,
+          rewardDate,
+        },
+      },
     });
+
+    if (raced?.paymentId === paymentId) {
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: { rewardSent: true, rewardSats: raced.rewardSats, rewardSkippedReason: null },
+      });
+      return { rewardSent: true, rewardSats: raced.rewardSats };
+    }
+
+    return markSkipped(paymentId, "already_claimed_merchant_today", amount);
+  }
+
+  // Enforce shop daily cap after insert (handles concurrent claims).
+  const merchantCountAfter = await prisma.dailyReward.count({
+    where: {
+      merchantAddress: normalizedMerchant,
+      rewardDate,
+    },
+  });
+
+  if (merchantCountAfter > merchantLimit) {
+    await prisma.dailyReward.deleteMany({
+      where: { rewardAddress: normalizedUser, merchantAddress: normalizedMerchant, rewardDate, paymentId },
+    });
+    return markSkipped(paymentId, "merchant_daily_limit", amount);
+  }
+
+  try {
+    const pool = await getPoolBalance();
+    if ((pool.sats ?? 0) < amount) {
+      await prisma.dailyReward.deleteMany({
+        where: {
+          rewardAddress: normalizedUser,
+          merchantAddress: normalizedMerchant,
+          rewardDate,
+          paymentId,
+        },
+      });
+      return markSkipped(paymentId, "pool_empty", amount);
+    }
+  } catch {
+    /* if balance check fails, still try to send */
+  }
+
+  const send = await sendRewardToAddress(payment.rewardAddress, amount);
+  if (!send.success) {
+    await prisma.dailyReward.deleteMany({
+      where: { rewardAddress: normalizedUser, merchantAddress: normalizedMerchant, rewardDate, paymentId },
+    });
+
+    const err = (send.error ?? "Reward failed").toLowerCase();
+    const poolEmpty =
+      err.includes("insufficient") ||
+      err.includes("balance") ||
+      err.includes("not enough") ||
+      err.includes("no funds") ||
+      err.includes("funds");
+
+    if (poolEmpty) {
+      return markSkipped(paymentId, "pool_empty", amount);
+    }
+
     return {
       rewardSent: false,
-      rewardSats,
-      skippedReason: "already_claimed_today",
+      rewardSats: amount,
+      error: send.error ?? "Reward failed",
     };
   }
 
   await prisma.payment.update({
     where: { id: paymentId },
-    data: { rewardSent: true, rewardSats },
+    data: { rewardSent: true, rewardSats: amount, rewardSkippedReason: null },
   });
 
-  return { rewardSent: true, rewardSats };
+  return { rewardSent: true, rewardSats: amount };
 }

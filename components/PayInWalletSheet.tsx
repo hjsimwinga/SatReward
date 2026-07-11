@@ -165,7 +165,11 @@ export function PayInWalletButton({ invoice }: { invoice: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="tap-none flex w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-200/50 transition hover:from-blue-700 hover:to-blue-800 active:scale-[0.97]"
+        className="tap-none flex w-full max-w-xs items-center justify-center gap-2 rounded-[16px] bg-gradient-to-b from-[#d4b56a] to-accent-deep px-5 py-3.5 text-sm font-semibold text-white transition hover:brightness-105 active:scale-[0.97]"
+        style={{
+          boxShadow:
+            "0 1px 0 rgb(255 255 255 / 0.3) inset, 0 12px 28px -10px rgb(148 112 52 / 0.4)",
+        }}
       >
         <svg
           className="h-4 w-4 shrink-0"
