@@ -187,11 +187,11 @@ function MerchantQrScanner({ open, merchants, onClose, onMatch }: Props) {
 
       const parsed = classifyMerchantQrPayload(raw);
       if (parsed.kind === "invoice") {
-        reject("This is an invoice, not a shop address.");
+        reject("Not a merchant QR.");
         return;
       }
       if (parsed.kind === "none") {
-        reject("Not a Lightning address.");
+        reject("Merchant not listed.");
         return;
       }
 
@@ -200,7 +200,7 @@ function MerchantQrScanner({ open, merchants, onClose, onMatch }: Props) {
         parsed.address
       );
       if (!merchant) {
-        reject("Shop not listed on SatReward.");
+        reject("Merchant not listed.");
         return;
       }
 
@@ -283,7 +283,7 @@ function MerchantQrScanner({ open, merchants, onClose, onMatch }: Props) {
 
         setStatus("scanning");
         setTone("idle");
-        setMessage("Scan a listed shop Lightning address");
+        setMessage("Scan a merchant QR");
       } catch {
         if (!cancelled) {
           setStatus("error");
@@ -302,9 +302,9 @@ function MerchantQrScanner({ open, merchants, onClose, onMatch }: Props) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1a1f2a]/55 p-4 backdrop-blur-[2px] sm:items-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
       <div
-        className="relative w-full max-w-md overflow-hidden rounded-[28px] shadow-[0_1px_0_rgb(255_255_255)_inset,0_28px_56px_-24px_rgb(15_23_42/0.35)] ring-1 ring-line/90"
+        className="relative w-full max-w-lg overflow-hidden rounded-[28px] shadow-[0_1px_0_rgb(255_255_255)_inset,0_28px_56px_-24px_rgb(15_23_42/0.35)] ring-1 ring-line/90"
         role="dialog"
         aria-modal="true"
         aria-labelledby="merchant-scan-title"
@@ -334,7 +334,7 @@ function MerchantQrScanner({ open, merchants, onClose, onMatch }: Props) {
             </button>
           </div>
 
-          <div className="relative mx-5 overflow-hidden rounded-[22px] bg-[#0f141c] shadow-[0_12px_28px_-16px_rgb(15_23_42/0.55)] ring-1 ring-black/20">
+          <div className="relative mx-2 overflow-hidden rounded-[22px] bg-[#0f141c] shadow-[0_18px_40px_-18px_rgb(15_23_42/0.55)] ring-1 ring-[#d4b56a]/25">
             <video
               ref={videoRef}
               className="aspect-[4/3] w-full object-cover"
@@ -343,14 +343,28 @@ function MerchantQrScanner({ open, merchants, onClose, onMatch }: Props) {
               autoPlay
             />
 
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="relative h-48 w-48">
-                <div className="absolute inset-0 rounded-[20px] shadow-[0_0_0_9999px_rgba(8,10,14,0.45)]" />
-                <div className="absolute inset-0 rounded-[20px] ring-1 ring-white/35" />
-                <span className="absolute left-0 top-0 h-5 w-5 rounded-tl-[10px] border-l-2 border-t-2 border-[#d4b56a]" />
-                <span className="absolute right-0 top-0 h-5 w-5 rounded-tr-[10px] border-r-2 border-t-2 border-[#d4b56a]" />
-                <span className="absolute bottom-0 left-0 h-5 w-5 rounded-bl-[10px] border-b-2 border-l-2 border-[#d4b56a]" />
-                <span className="absolute bottom-0 right-0 h-5 w-5 rounded-br-[10px] border-b-2 border-r-2 border-[#d4b56a]" />
+            {/* Full-frame premium viewfinder */}
+            <div className="pointer-events-none absolute inset-0">
+              {/* Soft edge vignette — keeps camera clear in the center */}
+              <div className="absolute inset-0 rounded-[22px] shadow-[inset_0_0_48px_rgba(8,10,14,0.35)]" />
+              <div className="absolute inset-[10px] rounded-[16px] ring-1 ring-white/20" />
+              <div className="absolute inset-[10px] rounded-[16px] ring-1 ring-[#d4b56a]/35" />
+
+              {/* Outer gold L-corners */}
+              <span className="absolute left-3 top-3 h-9 w-9 rounded-tl-[14px] border-l-[2.5px] border-t-[2.5px] border-[#e6c97a] shadow-[0_0_12px_rgb(212_181_106/0.45)]" />
+              <span className="absolute right-3 top-3 h-9 w-9 rounded-tr-[14px] border-r-[2.5px] border-t-[2.5px] border-[#e6c97a] shadow-[0_0_12px_rgb(212_181_106/0.45)]" />
+              <span className="absolute bottom-3 left-3 h-9 w-9 rounded-bl-[14px] border-b-[2.5px] border-l-[2.5px] border-[#e6c97a] shadow-[0_0_12px_rgb(212_181_106/0.45)]" />
+              <span className="absolute bottom-3 right-3 h-9 w-9 rounded-br-[14px] border-b-[2.5px] border-r-[2.5px] border-[#e6c97a] shadow-[0_0_12px_rgb(212_181_106/0.45)]" />
+
+              {/* Inner fine corners */}
+              <span className="absolute left-5 top-5 h-4 w-4 rounded-tl-[6px] border-l border-t border-white/50" />
+              <span className="absolute right-5 top-5 h-4 w-4 rounded-tr-[6px] border-r border-t border-white/50" />
+              <span className="absolute bottom-5 left-5 h-4 w-4 rounded-bl-[6px] border-b border-l border-white/50" />
+              <span className="absolute bottom-5 right-5 h-4 w-4 rounded-br-[6px] border-b border-r border-white/50" />
+
+              {/* Soft scan sweep */}
+              <div className="absolute inset-x-10 top-8 bottom-8 overflow-hidden rounded-sm">
+                <div className="absolute left-0 right-0 h-px animate-scan-sweep bg-gradient-to-r from-transparent via-[#e6c97a] to-transparent shadow-[0_0_10px_rgb(230_201_122/0.7)]" />
               </div>
             </div>
 
