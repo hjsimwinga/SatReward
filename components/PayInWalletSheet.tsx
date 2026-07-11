@@ -26,6 +26,7 @@ type SheetProps = {
 
 const CLOSE_DISTANCE = 88;
 const CLOSE_VELOCITY = 0.45;
+const DRAG_THRESHOLD = 12;
 
 function ChevronRight() {
   return (
@@ -87,12 +88,13 @@ export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
 
   const closingRef = useRef(false);
   const draggingRef = useRef(false);
+  const trackingRef = useRef(false);
   const dragStartY = useRef(0);
   const dragStartAt = useRef(0);
   const dragYRef = useRef(0);
   const pointerIdRef = useRef<number | null>(null);
   const sheetRef = useRef<HTMLDivElement | null>(null);
-  const ignoreClickRef = useRef(false);
+  const didDragRef = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -106,6 +108,8 @@ export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
       setDragY(0);
       setDragging(false);
       draggingRef.current = false;
+      trackingRef.current = false;
+      didDragRef.current = false;
       return;
     }
     setVisible(true);
@@ -113,6 +117,7 @@ export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
     closingRef.current = false;
     setDragY(0);
     dragYRef.current = 0;
+    didDragRef.current = false;
   }, [open]);
 
   const finishClose = useCallback(() => {
@@ -155,17 +160,26 @@ export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
   };
 
   const endDrag = useCallback(() => {
-    if (!draggingRef.current || closingRef.current) return;
+    const wasDragging = draggingRef.current;
+    const wasTracking = trackingRef.current;
+    if (!wasDragging && !wasTracking) return;
+
+    trackingRef.current = false;
     draggingRef.current = false;
     setDragging(false);
     pointerIdRef.current = null;
+
+    if (!wasDragging || closingRef.current) {
+      dragYRef.current = 0;
+      setDragY(0);
+      return;
+    }
 
     const delta = dragYRef.current;
     const elapsed = Math.max(1, Date.now() - dragStartAt.current);
     const velocity = delta / elapsed;
 
     if (delta >= CLOSE_DISTANCE || velocity >= CLOSE_VELOCITY) {
-      ignoreClickRef.current = true;
       requestClose();
       return;
     }
@@ -177,39 +191,46 @@ export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
     if (closingRef.current) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
 
-    // Let real button taps work; still allow drag from empty areas & rows via move threshold
     pointerIdRef.current = e.pointerId;
     dragStartY.current = e.clientY;
     dragStartAt.current = Date.now();
     dragYRef.current = 0;
-    draggingRef.current = true;
-    setDragging(true);
-    ignoreClickRef.current = false;
-
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      /* ignore */
-    }
+    didDragRef.current = false;
+    trackingRef.current = true;
+    draggingRef.current = false;
   };
 
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current || closingRef.current) return;
+    if (!trackingRef.current || closingRef.current) return;
     if (pointerIdRef.current != null && e.pointerId !== pointerIdRef.current) return;
 
-    const delta = Math.max(0, e.clientY - dragStartY.current);
-    if (delta > 6) {
-      ignoreClickRef.current = true;
-      e.preventDefault();
+    const raw = e.clientY - dragStartY.current;
+
+    if (!draggingRef.current) {
+      if (raw < DRAG_THRESHOLD) return;
+      // Confirmed downward swipe — take over from buttons
+      draggingRef.current = true;
+      didDragRef.current = true;
+      setDragging(true);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* ignore */
+      }
     }
+
+    const delta = Math.max(0, raw);
     dragYRef.current = delta;
     setDragY(delta);
+    e.preventDefault();
   };
 
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (pointerIdRef.current != null && e.pointerId !== pointerIdRef.current) return;
     try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
     } catch {
       /* ignore */
     }
@@ -239,7 +260,9 @@ export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="pay-wallet-title"
-        className={`relative z-[1] w-full max-w-md touch-none select-none rounded-t-3xl bg-[#fdfdfe] shadow-2xl ring-1 ring-stone-200 ${
+        className={`relative z-[1] w-full max-w-md select-none rounded-t-3xl bg-[#fdfdfe] shadow-2xl ring-1 ring-stone-200 ${
+          dragging ? "touch-none" : ""
+        } ${
           dragging ? "" : "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
         } ${!closing && dragY === 0 && !dragging ? "animate-slide-up" : ""}`}
         style={{ transform: sheetTransform }}
@@ -263,22 +286,13 @@ export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
           <p className="mt-1 text-sm text-stone-500">Choose your Lightning wallet</p>
         </div>
 
-        <div
-          className="px-2 pb-2 pt-1"
-          onClickCapture={(e) => {
-            if (ignoreClickRef.current || dragYRef.current > 8) {
-              e.preventDefault();
-              e.stopPropagation();
-              ignoreClickRef.current = false;
-            }
-          }}
-        >
+        <div className="px-2 pb-2 pt-1">
           {PAY_SHEET_WALLETS.map((wallet) => (
             <WalletRow
               key={wallet.id}
               wallet={wallet}
               onClick={() => {
-                if (ignoreClickRef.current || dragYRef.current > 8) return;
+                if (didDragRef.current) return;
                 openInWallet(invoice, wallet);
                 requestClose();
               }}
@@ -292,7 +306,7 @@ export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
           <button
             type="button"
             onClick={() => {
-              if (ignoreClickRef.current || dragYRef.current > 8) return;
+              if (didDragRef.current) return;
               openWalletUri(genericLightningUri(invoice));
               requestClose();
             }}
