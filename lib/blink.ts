@@ -14,12 +14,12 @@ const SEND_LN_ADDRESS_PAYMENT_MUTATION = `
   }
 `;
 
-function useStablesats(): boolean {
+function isStablesatsEnabled(): boolean {
   return process.env.BLINK_USE_STABLESATS === "true";
 }
 
 function getSendWalletId(): string {
-  const walletId = useStablesats()
+  const walletId = isStablesatsEnabled()
     ? process.env.BLINK_USD_WALLET_ID
     : process.env.BLINK_BTC_WALLET_ID || process.env.BLINK_WALLET_ID;
   if (!walletId) throw new Error("Blink wallet ID not configured");
@@ -101,7 +101,7 @@ const MAX_DONATION_SATS = 10_000_000;
 
 /** Blink USD wallets reject invoices below ~1 US cent. */
 export async function getMinDonationSats(): Promise<number> {
-  if (!useStablesats()) return ABS_MIN_DONATION_SATS;
+  if (!isStablesatsEnabled()) return ABS_MIN_DONATION_SATS;
 
   const apiKey = process.env.BLINK_API_KEY;
   if (!apiKey) return 21;
@@ -152,7 +152,7 @@ export async function createPoolDonationInvoice(amountSats: number): Promise<Don
     throw new Error(`Minimum donation is ${minSats.toLocaleString()} sats`);
   }
 
-  const useStable = useStablesats();
+  const useStable = isStablesatsEnabled();
   const walletId = getReceiveWalletId();
   const memo = `SatReward pool donation · ${sats.toLocaleString()} sats`;
 
