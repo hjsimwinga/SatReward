@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type TransitionEvent,
+} from "react";
+import { createPortal } from "react-dom";
 import { apiPath } from "@/lib/apiPath";
 import {
   genericLightningUri,
@@ -15,6 +23,9 @@ type SheetProps = {
   open: boolean;
   onClose: () => void;
 };
+
+const CLOSE_DISTANCE = 88;
+const CLOSE_VELOCITY = 0.45;
 
 function ChevronRight() {
   return (
@@ -68,34 +79,178 @@ function WalletRow({
 }
 
 export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+
+  const closingRef = useRef(false);
+  const draggingRef = useRef(false);
+  const dragStartY = useRef(0);
+  const dragStartAt = useRef(0);
+  const dragYRef = useRef(0);
+  const pointerIdRef = useRef<number | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  const ignoreClickRef = useRef(false);
+
   useEffect(() => {
-    if (!open) return;
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setVisible(false);
+      setClosing(false);
+      closingRef.current = false;
+      setDragY(0);
+      setDragging(false);
+      draggingRef.current = false;
+      return;
+    }
+    setVisible(true);
+    setClosing(false);
+    closingRef.current = false;
+    setDragY(0);
+    dragYRef.current = 0;
+  }, [open]);
+
+  const finishClose = useCallback(() => {
+    setVisible(false);
+    setClosing(false);
+    closingRef.current = false;
+    setDragY(0);
+    dragYRef.current = 0;
+    setDragging(false);
+    draggingRef.current = false;
+    onClose();
+  }, [onClose]);
+
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    setDragging(false);
+    draggingRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") requestClose();
     };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [visible, requestClose]);
 
-  if (!open) return null;
+  const onSheetTransitionEnd = (e: TransitionEvent<HTMLDivElement>) => {
+    if (e.target !== sheetRef.current) return;
+    if (e.propertyName !== "transform") return;
+    if (closingRef.current) finishClose();
+  };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/45 p-0 sm:items-end">
+  const endDrag = useCallback(() => {
+    if (!draggingRef.current || closingRef.current) return;
+    draggingRef.current = false;
+    setDragging(false);
+    pointerIdRef.current = null;
+
+    const delta = dragYRef.current;
+    const elapsed = Math.max(1, Date.now() - dragStartAt.current);
+    const velocity = delta / elapsed;
+
+    if (delta >= CLOSE_DISTANCE || velocity >= CLOSE_VELOCITY) {
+      ignoreClickRef.current = true;
+      requestClose();
+      return;
+    }
+    setDragY(0);
+    dragYRef.current = 0;
+  }, [requestClose]);
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (closingRef.current) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+
+    // Let real button taps work; still allow drag from empty areas & rows via move threshold
+    pointerIdRef.current = e.pointerId;
+    dragStartY.current = e.clientY;
+    dragStartAt.current = Date.now();
+    dragYRef.current = 0;
+    draggingRef.current = true;
+    setDragging(true);
+    ignoreClickRef.current = false;
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!draggingRef.current || closingRef.current) return;
+    if (pointerIdRef.current != null && e.pointerId !== pointerIdRef.current) return;
+
+    const delta = Math.max(0, e.clientY - dragStartY.current);
+    if (delta > 6) {
+      ignoreClickRef.current = true;
+      e.preventDefault();
+    }
+    dragYRef.current = delta;
+    setDragY(delta);
+  };
+
+  const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (pointerIdRef.current != null && e.pointerId !== pointerIdRef.current) return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* ignore */
+    }
+    endDrag();
+  };
+
+  if (!mounted || !visible) return null;
+
+  const sheetTransform = closing
+    ? "translateY(110%)"
+    : `translateY(${dragY}px)`;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[80] flex items-end justify-center">
       <button
         type="button"
         aria-label="Close"
-        className="absolute inset-0"
-        onClick={onClose}
+        className="absolute inset-0 bg-stone-900/45 transition-opacity duration-300"
+        style={{
+          opacity: closing ? 0 : Math.max(0.15, 1 - dragY / 280),
+        }}
+        onClick={requestClose}
       />
 
       <div
+        ref={sheetRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="pay-wallet-title"
-        className="relative w-full max-w-md animate-slide-up rounded-t-3xl bg-[#fdfdfe] shadow-2xl ring-1 ring-stone-200"
+        className={`relative z-[1] w-full max-w-md touch-none select-none rounded-t-3xl bg-[#fdfdfe] shadow-2xl ring-1 ring-stone-200 ${
+          dragging ? "" : "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        } ${!closing && dragY === 0 && !dragging ? "animate-slide-up" : ""}`}
+        style={{ transform: sheetTransform }}
+        onTransitionEnd={onSheetTransitionEnd}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
       >
         <div className="flex justify-center pt-3">
-          <div className="h-1 w-11 rounded-full bg-stone-300/80" />
+          <div className="h-1.5 w-12 rounded-full bg-stone-300/90" />
         </div>
 
         <div className="px-5 pb-2 pt-5 text-center">
@@ -108,14 +263,24 @@ export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
           <p className="mt-1 text-sm text-stone-500">Choose your Lightning wallet</p>
         </div>
 
-        <div className="scroll-premium max-h-[min(52vh,420px)] overflow-y-auto px-2 pb-2 pt-1">
+        <div
+          className="px-2 pb-2 pt-1"
+          onClickCapture={(e) => {
+            if (ignoreClickRef.current || dragYRef.current > 8) {
+              e.preventDefault();
+              e.stopPropagation();
+              ignoreClickRef.current = false;
+            }
+          }}
+        >
           {PAY_SHEET_WALLETS.map((wallet) => (
             <WalletRow
               key={wallet.id}
               wallet={wallet}
               onClick={() => {
+                if (ignoreClickRef.current || dragYRef.current > 8) return;
                 openInWallet(invoice, wallet);
-                onClose();
+                requestClose();
               }}
             />
           ))}
@@ -127,8 +292,9 @@ export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
           <button
             type="button"
             onClick={() => {
+              if (ignoreClickRef.current || dragYRef.current > 8) return;
               openWalletUri(genericLightningUri(invoice));
-              onClose();
+              requestClose();
             }}
             className="tap-none flex w-full items-center gap-3.5 rounded-2xl px-3 py-3 text-left transition hover:bg-stone-50 active:scale-[0.99]"
           >
@@ -154,7 +320,8 @@ export function PayInWalletSheet({ invoice, open, onClose }: SheetProps) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
