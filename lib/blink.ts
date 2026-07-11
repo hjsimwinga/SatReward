@@ -369,7 +369,7 @@ export async function getZmwRate(): Promise<ZmwRate> {
   }
 
   let minDonationSats = ABS_MIN_DONATION_SATS;
-  if (useStablesats()) {
+  if (isStablesatsEnabled()) {
     const centsPerSat = parsePriceAmount(response.data?.data?.usdPrice?.btcSatPrice);
     if (centsPerSat != null && centsPerSat > 0) {
       minDonationSats = Math.max(ABS_MIN_DONATION_SATS, Math.ceil(1 / centsPerSat));
