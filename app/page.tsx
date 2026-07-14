@@ -269,10 +269,6 @@ export default function HomePage() {
         </div>
 
         <div className="animate-soft-enter-delay-2">
-          <LiveActivityCard refreshToken={poolRefreshToken} />
-        </div>
-
-        <div className="animate-soft-enter-delay-2">
           <StepDots step={step} />
 
           <div className="card">
@@ -532,6 +528,10 @@ export default function HomePage() {
                 </button>
               </div>
             )}
+          </div>
+
+          <div className="mt-6">
+            <LiveActivityCard refreshToken={poolRefreshToken} />
           </div>
 
           {step === "address" && <AboutSatReward />}
