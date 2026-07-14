@@ -8,6 +8,7 @@ import { MerchantQrScanButton } from "@/components/MerchantQrScanner";
 import { AmountInput } from "@/components/AmountInput";
 import { LightningAddressInput } from "@/components/LightningAddressInput";
 import { PoolBalanceCard } from "@/components/PoolBalanceCard";
+import { LiveActivityCard } from "@/components/LiveActivityCard";
 import { AboutSatReward } from "@/components/AboutSatReward";
 import { BackButton } from "@/components/BackButton";
 import { PayInWalletButton } from "@/components/PayInWalletSheet";
@@ -265,6 +266,10 @@ export default function HomePage() {
 
         <div className="animate-soft-enter-delay">
           <PoolBalanceCard refreshToken={poolRefreshToken} spendSats={poolSpendSats} />
+        </div>
+
+        <div className="animate-soft-enter-delay-2">
+          <LiveActivityCard refreshToken={poolRefreshToken} />
         </div>
 
         <div className="animate-soft-enter-delay-2">
