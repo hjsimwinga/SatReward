@@ -1,13 +1,12 @@
 /* SatReward service worker — premium offline shell */
-const CACHE = "satreward-v1";
-const BASE = "/satreward";
+const CACHE = "satreward-v2";
 
 const PRECACHE = [
-  `${BASE}/`,
-  `${BASE}/manifest.webmanifest`,
-  `${BASE}/icons/icon-192.png`,
-  `${BASE}/icons/icon-512.png`,
-  `${BASE}/icons/icon.svg`,
+  "/",
+  "/manifest.webmanifest",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/icons/icon.svg",
 ];
 
 self.addEventListener("install", (event) => {
@@ -36,10 +35,9 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
-  if (!url.pathname.startsWith(BASE)) return;
 
   // Network-first for API / dynamic data
-  if (url.pathname.startsWith(`${BASE}/api/`)) {
+  if (url.pathname.startsWith("/api/")) {
     event.respondWith(
       fetch(request).catch(() => caches.match(request))
     );

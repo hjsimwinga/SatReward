@@ -18,6 +18,7 @@ const sans = Manrope({
 const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://satreward.space"),
   title: "SatReward",
   description: "Spend sats. Get rewarded.",
   applicationName: "SatReward",

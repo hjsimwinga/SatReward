@@ -1,11 +1,8 @@
 /** @type {import('next').NextConfig} */
-const basePath = "/satreward";
-
 const nextConfig = {
-  basePath,
   reactStrictMode: true,
   env: {
-    NEXT_PUBLIC_BASE_PATH: basePath,
+    NEXT_PUBLIC_BASE_PATH: "",
   },
   async headers() {
     return [
@@ -13,7 +10,7 @@ const nextConfig = {
         source: "/sw.js",
         headers: [
           { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
-          { key: "Service-Worker-Allowed", value: "/satreward/" },
+          { key: "Service-Worker-Allowed", value: "/" },
         ],
       },
       {
