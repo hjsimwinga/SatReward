@@ -146,7 +146,7 @@ export function LiveActivityCard({ refreshToken = 0 }: Props) {
         className="tap-none relative flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-gold/[0.035] active:bg-gold/[0.055]"
       >
         <div className="min-w-0 flex-1">
-          <p className="mb-2.5 label-quiet">Today&apos;s activity</p>
+          <p className="mb-2.5 label-quiet">Recent activity</p>
 
           {loading && today == null ? (
             <div className="flex gap-2">
