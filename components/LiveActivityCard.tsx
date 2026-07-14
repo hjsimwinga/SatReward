@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { apiPath } from "@/lib/apiPath";
 
@@ -36,21 +36,6 @@ function ChevronIcon({ open }: { open: boolean }) {
     >
       <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
     </svg>
-  );
-}
-
-function LiveDot({ active }: { active: boolean }) {
-  return (
-    <span className="relative flex h-2 w-2 shrink-0" aria-hidden>
-      {active && (
-        <span className="absolute inset-0 animate-ping rounded-full bg-rise/45" />
-      )}
-      <span
-        className={`relative inline-flex h-2 w-2 rounded-full ${
-          active ? "bg-rise" : "bg-mute/40"
-        }`}
-      />
-    </span>
   );
 }
 
@@ -107,28 +92,14 @@ export function LiveActivityCard({ refreshToken = 0 }: Props) {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [freshPulse, setFreshPulse] = useState(false);
-  const lastHeadIdRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       const res = await axios.get(apiPath("/api/activity"));
       if (!res.data?.ok) return;
 
-      const nextItems = (res.data.items ?? []) as ActivityItem[];
-      const head = nextItems[0]?.id ?? null;
-      if (
-        head &&
-        lastHeadIdRef.current != null &&
-        lastHeadIdRef.current !== head
-      ) {
-        setFreshPulse(true);
-        window.setTimeout(() => setFreshPulse(false), 2400);
-      }
-      lastHeadIdRef.current = head;
-
       setToday(res.data.today as TodayStats);
-      setItems(nextItems);
+      setItems((res.data.items ?? []) as ActivityItem[]);
     } catch {
       /* keep last snapshot */
     } finally {
@@ -165,8 +136,8 @@ export function LiveActivityCard({ refreshToken = 0 }: Props) {
 
   return (
     <div className="card relative mb-6 overflow-hidden">
-      <div className="pointer-events-none absolute -left-10 top-0 h-28 w-28 rounded-full bg-rise/10 blur-3xl" />
-      <div className="pointer-events-none absolute -right-8 bottom-0 h-24 w-24 rounded-full bg-gold/15 blur-3xl" />
+      <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-gold/15 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-12 -left-8 h-24 w-24 rounded-full bg-sky-200/20 blur-3xl" />
 
       <button
         type="button"
@@ -175,10 +146,7 @@ export function LiveActivityCard({ refreshToken = 0 }: Props) {
         className="tap-none relative flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-gold/[0.035] active:bg-gold/[0.055]"
       >
         <div className="min-w-0 flex-1">
-          <div className="mb-2.5 flex items-center gap-2">
-            <LiveDot active={freshPulse || (!loading && items.length > 0)} />
-            <p className="label-quiet">Live today</p>
-          </div>
+          <p className="mb-2.5 label-quiet">Recent activity</p>
 
           {loading && today == null ? (
             <div className="flex gap-2">
@@ -187,10 +155,10 @@ export function LiveActivityCard({ refreshToken = 0 }: Props) {
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
-              <StatPill label="pays" value={payments.toLocaleString()} />
+              <StatPill label="payments" value={payments.toLocaleString()} />
               <StatPill label="rewards" value={rewards.toLocaleString()} />
               {rewardSats > 0 && (
-                <StatPill label="rewarded" value={rewardSats.toLocaleString()} />
+                <StatPill label="sats" value={rewardSats.toLocaleString()} />
               )}
             </div>
           )}
@@ -211,9 +179,9 @@ export function LiveActivityCard({ refreshToken = 0 }: Props) {
             <div className="relative space-y-2">
               {items.length === 0 ? (
                 <div className="rounded-[18px] bg-white/70 px-4 py-5 text-center ring-1 ring-line/70">
-                  <p className="text-sm font-medium text-ink-soft">Quiet for now</p>
+                  <p className="text-sm font-medium text-ink-soft">No activity yet</p>
                   <p className="mt-1 text-xs text-mute">
-                    New spends and rewards will show up here.
+                    Today&apos;s payments and rewards will appear here.
                   </p>
                 </div>
               ) : (
