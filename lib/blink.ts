@@ -395,10 +395,24 @@ export function satsToZmw(sats: number, zmwPerSat: number): number {
   return sats * zmwPerSat;
 }
 
-export function getRewardSats(): number {
-  const n = parseInt(process.env.REWARD_SATS ?? "500", 10);
-  if (!Number.isFinite(n) || n <= 0) return 500;
+export function getRewardPercent(): number {
+  const n = parseFloat(process.env.REWARD_PERCENT ?? "20");
+  if (!Number.isFinite(n) || n <= 0) return 20;
   return n;
+}
+
+export function getRewardCapSats(): number {
+  const n = parseInt(process.env.REWARD_CAP_SATS ?? "2000", 10);
+  if (!Number.isFinite(n) || n <= 0) return 2000;
+  return n;
+}
+
+/** 20% of spend by default, capped (default 2000 sats). */
+export function getRewardSats(spendSats: number): number {
+  const spend = Math.floor(Number(spendSats));
+  if (!Number.isFinite(spend) || spend <= 0) return 0;
+  const raw = Math.floor((spend * getRewardPercent()) / 100);
+  return Math.min(getRewardCapSats(), Math.max(0, raw));
 }
 
 export type BlinkSendResult = {

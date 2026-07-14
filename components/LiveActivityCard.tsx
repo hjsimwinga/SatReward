@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { apiPath } from "@/lib/apiPath";
 
@@ -71,6 +71,43 @@ function ActivityIcon({ rewardSent }: { rewardSent: boolean }) {
   );
 }
 
+function RewardMark() {
+  return (
+    <span
+      className="inline-flex text-rise"
+      title="Reward sent"
+      aria-label="Reward sent"
+    >
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path
+          d="M12 7.2V21"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+        <path
+          d="M5.5 11.5h13v7.2A2.3 2.3 0 0 1 16.2 21H7.8A2.3 2.3 0 0 1 5.5 18.7v-7.2Z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M5.8 7.8h12.4c.9 0 1.5.8 1.3 1.6l-.4 1.5c-.1.5-.6.8-1.1.8H6c-.5 0-1-.3-1.1-.8L4.5 9.4c-.2-.8.4-1.6 1.3-1.6Z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M9.2 7.8c0-1.6 1.1-2.9 2.8-2.9s2.8 1.3 2.8 2.9"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      </svg>
+    </span>
+  );
+}
+
 function StatPill({ label, value }: { label: string; value: string }) {
   return (
     <span className="inline-flex items-baseline gap-1.5 rounded-full bg-gradient-to-b from-white/90 to-[#f7f5f1]/90 px-2.5 py-1 shadow-[0_1px_0_rgb(255_255_255)_inset] ring-1 ring-line/70">
@@ -92,6 +129,7 @@ export function LiveActivityCard({ refreshToken = 0 }: Props) {
   const [items, setItems] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [nowMs, setNowMs] = useState(() => Date.now());
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     try {
@@ -130,12 +168,25 @@ export function LiveActivityCard({ refreshToken = 0 }: Props) {
     return () => window.clearInterval(id);
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const root = rootRef.current;
+      if (!root) return;
+      if (e.target instanceof Node && !root.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
   const payments = today?.payments ?? 0;
   const rewards = today?.rewards ?? 0;
   const rewardSats = today?.rewardSats ?? 0;
 
   return (
-    <div className="card relative mb-6 overflow-hidden">
+    <div ref={rootRef} className="card relative mb-6 overflow-hidden">
       <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-gold/15 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-12 -left-8 h-24 w-24 rounded-full bg-sky-200/20 blur-3xl" />
 
@@ -143,18 +194,18 @@ export function LiveActivityCard({ refreshToken = 0 }: Props) {
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="tap-none relative flex w-full items-center gap-3 px-5 py-4 text-left transition-colors hover:bg-gold/[0.035] active:bg-gold/[0.055]"
+        className="tap-none relative flex w-full items-center justify-center px-5 py-4 text-center transition-colors hover:bg-gold/[0.035] active:bg-gold/[0.055]"
       >
-        <div className="min-w-0 flex-1">
-          <p className="mb-2.5 label-quiet">Recent activity</p>
+        <div className="min-w-0">
+          <p className="mb-2.5 label-quiet">Today</p>
 
           {loading && today == null ? (
-            <div className="flex gap-2">
+            <div className="flex justify-center gap-2">
               <div className="skeleton-shimmer h-7 w-24 rounded-full bg-slate-100/90" />
               <div className="skeleton-shimmer h-7 w-28 rounded-full bg-slate-100/90" />
             </div>
           ) : (
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               <StatPill label="payments" value={payments.toLocaleString()} />
               <StatPill label="rewards" value={rewards.toLocaleString()} />
               {rewardSats > 0 && (
@@ -164,7 +215,9 @@ export function LiveActivityCard({ refreshToken = 0 }: Props) {
           )}
         </div>
 
-        <ChevronIcon open={open} />
+        <span className="absolute right-5 top-1/2 -translate-y-1/2">
+          <ChevronIcon open={open} />
+        </span>
       </button>
 
       <div
@@ -204,14 +257,12 @@ export function LiveActivityCard({ refreshToken = 0 }: Props) {
                       <p className="mt-0.5 truncate text-xs text-mute">
                         {item.addressHint}
                       </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                         <span className="tnum rounded-lg bg-wash px-2 py-0.5 text-[11px] font-semibold text-ink-soft ring-1 ring-line/60">
-                          {item.amountSats.toLocaleString()} sats spent
+                          **** sats spent
                         </span>
                         {item.rewardSent && item.rewardSats != null && item.rewardSats > 0 && (
-                          <span className="tnum rounded-lg bg-rise/10 px-2 py-0.5 text-[11px] font-semibold text-rise ring-1 ring-rise/15">
-                            +{item.rewardSats.toLocaleString()} reward
-                          </span>
+                          <RewardMark />
                         )}
                       </div>
                     </div>

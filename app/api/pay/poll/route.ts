@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
     if (payment.status === "paid") {
       let rewardSent = payment.rewardSent;
-      let rewardSats = payment.rewardSats ?? getRewardSats();
+      let rewardSats = payment.rewardSats ?? getRewardSats(payment.amountSats);
       let rewardSkippedReason = payment.rewardSkippedReason;
       let rewardError: string | undefined;
 

@@ -44,9 +44,8 @@ export async function GET() {
         _sum: { rewardSats: true },
       }),
       prisma.payment.findMany({
-        where: { status: "paid" },
+        where: { status: "paid", createdAt: { gte: dayStart } },
         orderBy: { createdAt: "desc" },
-        take: 3,
         select: {
           id: true,
           merchantName: true,

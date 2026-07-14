@@ -142,5 +142,9 @@
   {
     "name": "Camp Kiosk",
     "lightningAddress": "campkiosk@blink.sv"
+  },
+  {
+    "name": "Coin Toss",
+    "lightningAddress": "hjsimwinga@blink.sv"
   }
 ]

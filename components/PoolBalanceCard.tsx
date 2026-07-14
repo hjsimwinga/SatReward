@@ -140,6 +140,7 @@ export function PoolBalanceCard({ refreshToken = 0, spendSats = null }: Props) {
   const rateRef = useRef<number | null>(null);
   const ignoreAboveRef = useRef<number | null>(null);
   const deltaIdRef = useRef(0);
+  const donatePanelRef = useRef<HTMLDivElement>(null);
 
   const parsedSats = useMemo(() => {
     const n = parseInt(amountSats, 10);
@@ -240,6 +241,19 @@ export function PoolBalanceCard({ refreshToken = 0, spendSats = null }: Props) {
     const id = window.setInterval(() => void loadBalance(), DONATE_POLL_MS);
     return () => window.clearInterval(id);
   }, [donateOpen, loadBalance]);
+
+  useEffect(() => {
+    if (!donateOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const panel = donatePanelRef.current;
+      if (!panel) return;
+      if (e.target instanceof Node && !panel.contains(e.target)) {
+        setDonateOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [donateOpen]);
 
   useEffect(() => {
     if (!refreshToken || refreshToken === lastSpendTokenRef.current) return;
@@ -381,21 +395,21 @@ export function PoolBalanceCard({ refreshToken = 0, spendSats = null }: Props) {
         }`}
       />
 
-      <div className="relative px-6 pb-5 pt-6 text-center">
+      <div className="relative px-6 pb-3.5 pt-4 text-center">
         <p className="label-quiet">Reward pool</p>
 
         {showSkeleton ? (
-          <div className="mt-4 flex flex-col items-center gap-2.5 py-1">
-            <SkeletonLine className="h-12 w-52" />
-            <SkeletonLine className="h-4 w-28" />
+          <div className="mt-2.5 flex flex-col items-center gap-2 py-0.5">
+            <SkeletonLine className="h-10 w-48" />
+            <SkeletonLine className="h-3.5 w-24" />
           </div>
         ) : (
-          <div className="relative mt-3">
-            <div className="pointer-events-none absolute inset-x-0 -top-2 flex justify-center">
+          <div className="relative mt-2">
+            <div className="pointer-events-none absolute inset-x-0 -top-1.5 flex justify-center">
               {deltas.map((d) => (
                 <span
                   key={d.id}
-                  className={`pool-delta absolute text-[13px] font-semibold tabular-nums tracking-tight ${
+                  className={`pool-delta absolute text-[12px] font-semibold tabular-nums tracking-tight ${
                     d.dir === "up" ? "text-rise" : "text-fall"
                   }`}
                 >
@@ -406,14 +420,16 @@ export function PoolBalanceCard({ refreshToken = 0, spendSats = null }: Props) {
             </div>
 
             <p
-              className={`font-display text-[3.35rem] leading-none tnum transition-colors duration-500 ${moodText}`}
+              className={`flex items-baseline justify-center gap-1.5 font-display text-[2.85rem] leading-none tracking-[-0.02em] tnum transition-colors duration-500 ${moodText}`}
             >
               <AnimatedNumber value={sats ?? 0} durationMs={mood === "idle" ? 350 : 1350} />
+              <span className="pb-0.5 text-[11px] font-semibold tracking-[0.14em] text-mute">
+                SATS
+              </span>
             </p>
-            <p className="mt-2.5 text-[13px] font-semibold tracking-[0.08em] text-mute">SATS</p>
 
             {zmw != null && (
-              <p className="mt-3 text-sm tabular-nums text-mute transition-opacity duration-500">
+              <p className="mt-1.5 text-[13px] tabular-nums tracking-tight text-mute transition-opacity duration-500">
                 ≈ K{zmw.toFixed(2)}
               </p>
             )}
@@ -421,7 +437,7 @@ export function PoolBalanceCard({ refreshToken = 0, spendSats = null }: Props) {
         )}
       </div>
 
-      <div className="relative border-t border-line-soft">
+      <div ref={donatePanelRef} className="relative border-t border-line-soft">
         <button
           type="button"
           onClick={() => setDonateOpen((o) => !o)}

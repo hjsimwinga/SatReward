@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const RULES = [
   "Pay a listed shop in sats.",
-  "Spend at least 1,000 sats to earn a reward.",
-  "Get 500 sats back as a reward.",
+  "Get 20% sats back (max 2,000 sats).",
   "One reward per shop each day.",
   "Each shop can trigger 5 rewards per day.",
   "Rewards reset every day (Zambia time).",
@@ -29,9 +28,23 @@ function ChevronIcon({ open }: { open: boolean }) {
 
 export function AboutSatReward() {
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const root = rootRef.current;
+      if (!root) return;
+      if (e.target instanceof Node && !root.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
 
   return (
-    <div className="mt-7">
+    <div ref={rootRef} className="mt-7">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}

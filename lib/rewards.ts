@@ -23,12 +23,6 @@ export function getMerchantDailyRewardLimit(): number {
   return n;
 }
 
-export function getMinSpendSatsForReward(): number {
-  const n = parseInt(process.env.MIN_SPEND_SATS_FOR_REWARD ?? "1000", 10);
-  if (!Number.isFinite(n) || n <= 0) return 1000;
-  return n;
-}
-
 function normalizeMerchantAddress(input: string): string {
   return input.trim().toLowerCase();
 }
@@ -98,7 +92,7 @@ export async function processReward(paymentId: string): Promise<RewardOutcome> {
     return { rewardSent: false, rewardSats: 0, error: "Payment not found" };
   }
 
-  const rewardSats = payment.rewardSats ?? getRewardSats();
+  const rewardSats = payment.rewardSats ?? getRewardSats(payment.amountSats);
 
   if (payment.rewardSent) {
     return { rewardSent: true, rewardSats };
@@ -107,7 +101,7 @@ export async function processReward(paymentId: string): Promise<RewardOutcome> {
   if (payment.rewardSkippedReason) {
     return {
       rewardSent: false,
-      rewardSats: getRewardSats(),
+      rewardSats: getRewardSats(payment.amountSats),
       skippedReason: payment.rewardSkippedReason,
     };
   }
@@ -115,7 +109,7 @@ export async function processReward(paymentId: string): Promise<RewardOutcome> {
   const normalizedUser = normalizeRewardAddress(payment.rewardAddress);
   const normalizedMerchant = normalizeMerchantAddress(payment.merchantAddress);
   const rewardDate = todayInZambia();
-  const amount = getRewardSats();
+  const amount = getRewardSats(payment.amountSats);
   const merchantLimit = getMerchantDailyRewardLimit();
 
   const existing = await prisma.dailyReward.findUnique({
@@ -141,9 +135,8 @@ export async function processReward(paymentId: string): Promise<RewardOutcome> {
     return markSkipped(paymentId, "already_claimed_merchant_today", amount);
   }
 
-  const minSpend = getMinSpendSatsForReward();
-  if (payment.amountSats < minSpend) {
-    return markSkipped(paymentId, "below_min_spend", amount);
+  if (amount < 1) {
+    return markSkipped(paymentId, "reward_too_small", 0);
   }
 
   const merchantCount = await prisma.dailyReward.count({

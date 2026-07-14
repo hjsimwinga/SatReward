@@ -308,7 +308,7 @@ export default function HomePage() {
                 <button
                   type="submit"
                   disabled={!rewardAddress.trim()}
-                  className="btn-primary relative mt-7"
+                  className="btn-primary relative mt-5"
                 >
                   Continue
                 </button>
@@ -464,21 +464,6 @@ export default function HomePage() {
                   </div>
                 )}
 
-                {rewardState === "skipped" && skippedReason === "below_min_spend" && (
-                  <div className="relative animate-fade-in overflow-hidden rounded-[18px] px-4 py-4 ring-1 ring-line/90">
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_70%_at_50%_0%,rgb(255_248_230/0.9),transparent_60%),linear-gradient(165deg,#ffffff_0%,#faf8f4_100%)]" />
-                    <div className="relative text-center">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-mute">
-                        Reward
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-ink">Spend a bit more</p>
-                      <p className="mt-1.5 text-[13px] leading-relaxed text-mute">
-                        Spend at least 1,000 sats to earn a reward.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 {rewardState === "skipped" && skippedReason === "pool_empty" && (
                   <div className="relative animate-fade-in overflow-hidden rounded-[18px] px-4 py-4 ring-1 ring-line/90">
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_70%_at_50%_0%,rgb(255_248_230/0.9),transparent_60%),linear-gradient(165deg,#ffffff_0%,#faf8f4_100%)]" />
@@ -501,7 +486,6 @@ export default function HomePage() {
                   skippedReason !== "already_claimed_merchant_today" &&
                   skippedReason !== "already_claimed_today" &&
                   skippedReason !== "merchant_daily_limit" &&
-                  skippedReason !== "below_min_spend" &&
                   skippedReason !== "pool_empty" && (
                   <div className="relative animate-fade-in rounded-[18px] bg-wash px-4 py-4 ring-1 ring-line">
                     <p className="text-sm text-mute">No reward this time.</p>
@@ -523,8 +507,29 @@ export default function HomePage() {
                   </div>
                 )}
 
-                <button type="button" onClick={reset} className="btn-primary relative">
-                  Start again
+                <button type="button" onClick={reset} className="btn-primary relative inline-flex items-center justify-center gap-2">
+                  <svg
+                    className="h-[1.05rem] w-[1.05rem] shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <path
+                      d="M4.5 11.2 12 4.5l7.5 6.7"
+                      stroke="currentColor"
+                      strokeWidth="1.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M7 10.8V19a1.2 1.2 0 0 0 1.2 1.2h2.8v-4.4h2v4.4h2.8A1.2 1.2 0 0 0 17 19v-8.2"
+                      stroke="currentColor"
+                      strokeWidth="1.9"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  Homepage
                 </button>
               </div>
             )}
