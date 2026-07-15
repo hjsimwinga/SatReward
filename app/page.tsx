@@ -8,7 +8,7 @@ import { MerchantQrScanButton } from "@/components/MerchantQrScanner";
 import { AmountInput } from "@/components/AmountInput";
 import { LightningAddressInput } from "@/components/LightningAddressInput";
 import { PoolBalanceCard } from "@/components/PoolBalanceCard";
-import { LiveActivityCard } from "@/components/LiveActivityCard";
+import { ImpactStats } from "@/components/ImpactStats";
 import { AboutSatReward } from "@/components/AboutSatReward";
 import { BackButton } from "@/components/BackButton";
 import { PayInWalletButton } from "@/components/PayInWalletSheet";
@@ -258,20 +258,20 @@ export default function HomePage() {
 
   return (
     <main className="relative flex min-h-[100dvh] items-center justify-center overflow-x-hidden px-4 py-10 pb-14">
-      <div className="w-full max-w-[440px]">
-        <header className="animate-soft-enter mb-8 text-center">
-          <h1 className="font-display text-[3.25rem] leading-[0.95] text-ink">SatReward</h1>
-          <p className="mt-3 text-[15px] font-medium text-mute">Spend sats. Get rewarded.</p>
-        </header>
+      <div className="w-full max-w-[440px] lg:max-w-[960px]">
+        <div className="mx-auto w-full max-w-[440px]">
+          <header className="animate-soft-enter mb-8 text-center">
+            <h1 className="font-display text-[3.25rem] leading-[0.95] text-ink">SatReward</h1>
+          </header>
 
-        <div className="animate-soft-enter-delay">
-          <PoolBalanceCard refreshToken={poolRefreshToken} spendSats={poolSpendSats} />
-        </div>
+          <div className="animate-soft-enter-delay">
+            <PoolBalanceCard refreshToken={poolRefreshToken} spendSats={poolSpendSats} />
+          </div>
 
-        <div className="animate-soft-enter-delay-2">
-          <StepDots step={step} />
+          <div className="animate-soft-enter-delay-2">
+            <StepDots step={step} />
 
-          <div className="card">
+            <div className="card">
             {step !== "done" && (
               <div className="relative z-[1] px-6 pb-2 pt-6">
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-gold/[0.08] to-transparent" />
@@ -291,7 +291,7 @@ export default function HomePage() {
                   >
                     <path d="M13.2 2.1 5.4 13.4c-.25.36 0 .85.43.85h5.02l-1.2 7.4c-.1.62.7.98 1.12.5l8.1-11.1c.27-.37.01-.9-.44-.9h-5.2l1.35-7.55c.1-.58-.66-.93-1.08-.5Z" />
                   </svg>
-                  <span className="text-[12px] font-semibold tracking-[0.04em] text-ink-soft">
+                  <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-mute">
                     Your Lightning address
                   </span>
                 </label>
@@ -534,13 +534,19 @@ export default function HomePage() {
               </div>
             )}
           </div>
-
-          <div className="mt-6">
-            <LiveActivityCard refreshToken={poolRefreshToken} />
           </div>
-
-          {step === "address" && <AboutSatReward />}
         </div>
+
+        {step === "address" && (
+          <div className="animate-soft-enter-delay-2 mt-6">
+            <div className="mx-auto w-full max-w-[440px]">
+              <ImpactStats refreshToken={poolRefreshToken} />
+            </div>
+            <div className="mx-auto w-full max-w-[440px] lg:max-w-none">
+              <AboutSatReward />
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

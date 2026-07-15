@@ -111,7 +111,7 @@ export function LightningAddressInput({ value, onChange }: Props) {
         placeholder="you@wallet.com"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="field pr-[7.75rem]"
+        className="field pr-[7.75rem] text-[13px] font-medium tracking-wide text-mute"
       />
 
       <button
